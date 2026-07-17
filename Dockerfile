@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 
 # ---- Build stage: install all deps, generate Prisma client, build Next ----
+# NODE_ENV is left unset so `npm ci` installs devDependencies (needed to build)
+# while `next build` still produces a production build.
 FROM node:22-slim AS build
-ENV NODE_ENV=development
 WORKDIR /app
 
 # OpenSSL is handy for Prisma; ca-certificates for outbound TLS at runtime.
@@ -11,7 +12,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 COPY . .
 # Generate the Prisma client (schema only — no DB needed) then build Next.
