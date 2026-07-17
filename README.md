@@ -20,6 +20,12 @@ direct messages, emoji reactions, and near-real-time updates. Built with
 - Direct messages (1:1) between workspace members
 - Message composer (Enter to send, Shift+Enter for newline), author grouping,
   day dividers, emoji reactions with per-user tooltips
+- **Threads** — reply in a side panel, with reply counts and participant avatars
+- **Edit & delete** your own messages (deleting a thread root tombstones it so
+  other people's replies survive)
+- **@mentions** with member autocomplete, plus lightweight `**bold**`, `` `code` ``
+  and link formatting
+- **Search** messages across the workspace (⌘K), scoped to what you can access
 - Authorization enforced server-side on every API route
 
 ## Getting started

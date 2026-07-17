@@ -121,6 +121,8 @@ model Message {
   channelId      String?
   conversationId String?
   parentId       String?
+  editedAt       DateTime?
+  deletedAt      DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

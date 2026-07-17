@@ -9,11 +9,19 @@ const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
 export function MessageList({
   messages,
+  currentUserId,
   onToggleReaction,
+  onEdit,
+  onDelete,
+  onOpenThread,
   emptyState,
 }: {
   messages: SerializedMessage[];
+  currentUserId: string;
   onToggleReaction: (messageId: string, emoji: string) => void;
+  onEdit?: (messageId: string, body: string) => Promise<void>;
+  onDelete?: (messageId: string) => void;
+  onOpenThread?: (message: SerializedMessage) => void;
   emptyState?: ReactNode;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -53,7 +61,11 @@ export function MessageList({
         key={message.id}
         message={message}
         showHeader={showHeader}
+        currentUserId={currentUserId}
         onToggleReaction={onToggleReaction}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onOpenThread={onOpenThread}
       />,
     );
 

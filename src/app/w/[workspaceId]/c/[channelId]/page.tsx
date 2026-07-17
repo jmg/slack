@@ -10,7 +10,7 @@ export default async function ChannelPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const { channelId } = await params;
+  const { workspaceId, channelId } = await params;
 
   const channel = await requireChannelAccess(user.id, channelId).catch(() => null);
   if (!channel) notFound();
@@ -19,6 +19,7 @@ export default async function ChannelPage({
     <ChatView
       messagesUrl={`/api/channels/${channel.id}/messages`}
       currentUserId={user.id}
+      workspaceId={workspaceId}
       title={channel.name}
       subtitle={channel.description ?? undefined}
       iconType={channel.isPrivate ? "lock" : "hash"}

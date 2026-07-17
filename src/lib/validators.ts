@@ -31,6 +31,14 @@ export const createMessageSchema = z.object({
   parentId: z.string().optional(),
 });
 
+export const updateMessageSchema = z.object({
+  body: z.string().trim().min(1, "Message cannot be empty").max(4000),
+});
+
+export const searchSchema = z.object({
+  q: z.string().trim().min(1).max(200),
+});
+
 export const reactionSchema = z.object({
   emoji: z.string().min(1).max(16),
 });

@@ -11,7 +11,7 @@ export default async function DmPage({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const { conversationId } = await params;
+  const { workspaceId, conversationId } = await params;
 
   const ok = await requireConversationMember(user.id, conversationId).catch(
     () => null,
@@ -41,6 +41,7 @@ export default async function DmPage({
     <ChatView
       messagesUrl={`/api/conversations/${conversationId}/messages`}
       currentUserId={user.id}
+      workspaceId={workspaceId}
       title={title}
       iconType="dm"
       avatar={avatar}

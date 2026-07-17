@@ -3,6 +3,15 @@ import { prisma } from "@/lib/prisma";
 export const messageInclude = {
   user: { select: { id: true, name: true, image: true } },
   reactions: { include: { user: { select: { id: true, name: true } } } },
+  _count: { select: { replies: true } },
+  replies: {
+    orderBy: { createdAt: "desc" },
+    take: 3,
+    select: {
+      createdAt: true,
+      user: { select: { id: true, name: true, image: true } },
+    },
+  },
 } as const;
 
 type MessageWithRelations = Awaited<
@@ -22,9 +31,13 @@ export type SerializedMessage = {
   id: string;
   body: string;
   createdAt: string;
-  updatedAt: string;
+  editedAt: string | null;
+  deleted: boolean;
   author: { id: string; name: string; image: string | null };
   reactions: SerializedReaction[];
+  replyCount: number;
+  lastReplyAt: string | null;
+  replyUsers: { id: string; name: string; image: string | null }[];
 };
 
 export function serializeMessage(
@@ -42,13 +55,28 @@ export function serializeMessage(
     grouped.set(reaction.emoji, existing);
   }
 
+  // Distinct recent repliers (for the thread avatar stack).
+  const replyUsers: SerializedMessage["replyUsers"] = [];
+  const seen = new Set<string>();
+  for (const reply of message.replies) {
+    if (seen.has(reply.user.id)) continue;
+    seen.add(reply.user.id);
+    replyUsers.push(reply.user);
+  }
+
+  const deleted = message.deletedAt != null;
+
   return {
     id: message.id,
-    body: message.body,
+    body: deleted ? "" : message.body,
     createdAt: message.createdAt.toISOString(),
-    updatedAt: message.updatedAt.toISOString(),
+    editedAt: message.editedAt ? message.editedAt.toISOString() : null,
+    deleted,
     author: message.user,
-    reactions: Array.from(grouped.values()),
+    reactions: deleted ? [] : Array.from(grouped.values()),
+    replyCount: message._count.replies,
+    lastReplyAt: message.replies[0]?.createdAt.toISOString() ?? null,
+    replyUsers,
   };
 }
 
@@ -73,4 +101,15 @@ export async function listConversationMessages(
     take: 200,
   });
   return messages.map((m) => serializeMessage(m, currentUserId));
+}
+
+/** Replies within a thread, oldest first — but always the most recent 500. */
+export async function listThreadReplies(parentId: string, currentUserId: string) {
+  const replies = await prisma.message.findMany({
+    where: { parentId },
+    include: messageInclude,
+    orderBy: { createdAt: "desc" },
+    take: 500,
+  });
+  return replies.reverse().map((m) => serializeMessage(m, currentUserId));
 }

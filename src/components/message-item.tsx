@@ -1,10 +1,19 @@
 "use client";
 
-import { SmilePlus } from "lucide-react";
+import { useState } from "react";
+import {
+  SmilePlus,
+  MessageSquareText,
+  MoreVertical,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
+import { MessageBody } from "@/components/message-body";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -12,6 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { formatMessageTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { SerializedMessage } from "@/lib/messages";
@@ -21,13 +31,40 @@ const EMOJIS = ["👍", "❤️", "😂", "🎉", "👀", "🙌", "✅", "🔥"]
 export function MessageItem({
   message,
   showHeader,
+  currentUserId,
   onToggleReaction,
+  onEdit,
+  onDelete,
+  onOpenThread,
+  hideThreadIndicator,
 }: {
   message: SerializedMessage;
   showHeader: boolean;
+  currentUserId: string;
   onToggleReaction: (messageId: string, emoji: string) => void;
+  onEdit?: (messageId: string, body: string) => Promise<void>;
+  onDelete?: (messageId: string) => void;
+  onOpenThread?: (message: SerializedMessage) => void;
+  hideThreadIndicator?: boolean;
 }) {
   const time = formatMessageTime(message.createdAt);
+  const isMine = message.author.id === currentUserId;
+  const deleted = message.deleted;
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(message.body);
+  const [saving, setSaving] = useState(false);
+
+  async function saveEdit() {
+    const body = draft.trim();
+    if (!body || !onEdit) return;
+    setSaving(true);
+    try {
+      await onEdit(message.id, body);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div
@@ -55,11 +92,54 @@ export function MessageItem({
             <span className="text-xs text-muted-foreground">{time}</span>
           </div>
         )}
-        <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">
-          {message.body}
-        </div>
 
-        {message.reactions.length > 0 && (
+        {editing ? (
+          <div className="my-1 flex flex-col gap-2">
+            <textarea
+              value={draft}
+              autoFocus
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void saveEdit();
+                } else if (e.key === "Escape") {
+                  setEditing(false);
+                  setDraft(message.body);
+                }
+              }}
+              className="min-h-16 w-full resize-y rounded-md border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/30"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={saveEdit} disabled={saving || !draft.trim()}>
+                {saving ? "Saving…" : "Save"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setEditing(false);
+                  setDraft(message.body);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : deleted ? (
+          <p className="py-0.5 text-sm italic text-muted-foreground">
+            This message was deleted
+          </p>
+        ) : (
+          <div className="flex items-baseline gap-1">
+            <MessageBody body={message.body} />
+            {message.editedAt && (
+              <span className="text-[11px] text-muted-foreground">(edited)</span>
+            )}
+          </div>
+        )}
+
+        {message.reactions.length > 0 && !editing && (
           <div className="mt-1 flex flex-wrap gap-1">
             {message.reactions.map((r) => (
               <Tooltip key={r.emoji}>
@@ -85,30 +165,95 @@ export function MessageItem({
             ))}
           </div>
         )}
+
+        {!hideThreadIndicator && message.replyCount > 0 && !editing && (
+          <button
+            type="button"
+            onClick={() => onOpenThread?.(message)}
+            className="mt-1 flex items-center gap-2 rounded-md border border-transparent px-1.5 py-1 text-xs font-semibold text-[#1264a3] transition hover:border-border hover:bg-background"
+          >
+            <span className="flex -space-x-1">
+              {message.replyUsers.map((u) => (
+                <UserAvatar
+                  key={u.id}
+                  name={u.name}
+                  image={u.image}
+                  className="size-5 rounded ring-2 ring-background"
+                />
+              ))}
+            </span>
+            {message.replyCount} {message.replyCount === 1 ? "reply" : "replies"}
+          </button>
+        )}
       </div>
 
-      <div className="absolute -top-3 right-3 hidden rounded-md border bg-background shadow-sm group-hover:flex">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            aria-label="Add reaction"
-          >
-            <SmilePlus className="size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="flex gap-1 p-1">
-            {EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                onClick={() => onToggleReaction(message.id, emoji)}
-                className="flex size-8 items-center justify-center rounded text-lg transition hover:bg-muted"
+      {!editing && !deleted && (
+        <div className="absolute -top-3 right-3 hidden items-center rounded-md border bg-background shadow-sm group-hover:flex">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              aria-label="Add reaction"
+            >
+              <SmilePlus className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="flex gap-1 p-1">
+              {EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => onToggleReaction(message.id, emoji)}
+                  className="flex size-8 items-center justify-center rounded text-lg transition hover:bg-muted"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {onOpenThread && (
+            <button
+              type="button"
+              onClick={() => onOpenThread(message)}
+              aria-label="Reply in thread"
+              title="Reply in thread"
+              className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
+              <MessageSquareText className="size-4" />
+            </button>
+          )}
+
+          {isMine && (onEdit || onDelete) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                aria-label="More actions"
               >
-                {emoji}
-              </button>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+                <MoreVertical className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {onEdit && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setDraft(message.body);
+                      setEditing(true);
+                    }}
+                  >
+                    <Pencil className="size-4" /> Edit message
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => onDelete(message.id)}
+                  >
+                    <Trash2 className="size-4" /> Delete message
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      )}
     </div>
   );
 }

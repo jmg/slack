@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -10,6 +10,7 @@ import {
   LogOut,
   Plus,
   MessageSquarePlus,
+  Search,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -22,6 +23,7 @@ import {
 import { UserAvatar } from "@/components/user-avatar";
 import { CreateChannelDialog } from "@/components/create-channel-dialog";
 import { NewDmDialog } from "@/components/new-dm-dialog";
+import { SearchDialog } from "@/components/search-dialog";
 import { cn } from "@/lib/utils";
 import type {
   CurrentUser,
@@ -47,6 +49,18 @@ export function WorkspaceSidebar({
   const router = useRouter();
   const [channelDialog, setChannelDialog] = useState(false);
   const [dmDialog, setDmDialog] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -77,6 +91,20 @@ export function WorkspaceSidebar({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <div className="px-2 pt-2">
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          className="flex w-full items-center gap-2 rounded-md bg-white/10 px-2 py-1.5 text-sm text-white/70 transition hover:bg-white/15"
+        >
+          <Search className="size-3.5" />
+          <span>Search</span>
+          <kbd className="ml-auto rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-medium">
+            ⌘K
+          </kbd>
+        </button>
+      </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-3">
         {/* Channels */}
@@ -175,6 +203,11 @@ export function WorkspaceSidebar({
         members={members}
         open={dmDialog}
         onOpenChange={setDmDialog}
+      />
+      <SearchDialog
+        workspaceId={workspace.id}
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
       />
     </aside>
   );

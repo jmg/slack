@@ -71,3 +71,30 @@ export async function requireConversationMember(
   }
   return conversation;
 }
+
+/**
+ * Ensure the user can see a message (via its channel or conversation) and
+ * return it. Used by edit/delete/thread endpoints.
+ */
+export async function requireMessageAccess(userId: string, messageId: string) {
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    select: {
+      id: true,
+      userId: true,
+      channelId: true,
+      conversationId: true,
+      parentId: true,
+      deletedAt: true,
+    },
+  });
+  if (!message) throw new ApiError("Message not found", 404);
+  if (message.channelId) {
+    await requireChannelAccess(userId, message.channelId);
+  } else if (message.conversationId) {
+    await requireConversationMember(userId, message.conversationId);
+  } else {
+    throw new ApiError("Message not found", 404);
+  }
+  return message;
+}
