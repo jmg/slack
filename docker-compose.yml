@@ -1,0 +1,24 @@
+# Standard Postgres for local development.
+# Start it with:  docker compose up -d
+# Then set in .env:  DATABASE_URL="postgresql://slack:slack@localhost:5432/slack?schema=public"
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: slack_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: slack
+      POSTGRES_PASSWORD: slack
+      POSTGRES_DB: slack
+    ports:
+      - "5432:5432"
+    volumes:
+      - slack_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U slack -d slack"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  slack_db_data:
