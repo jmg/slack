@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import useSWR from "swr";
+import { useEffect, useState } from "react";
+import useSWR, { useSWRConfig } from "swr";
 import { toast } from "sonner";
 import { Hash, Lock } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
@@ -36,6 +36,28 @@ export function ChatView({
     { refreshInterval: 3000 },
   );
   const [threadId, setThreadId] = useState<string | null>(null);
+  const { mutate: globalMutate } = useSWRConfig();
+
+  // Viewing a channel/DM marks it read — on open and as new messages land —
+  // then refreshes the sidebar's unread badges.
+  const readUrl = messagesUrl.replace(/\/messages$/, "/read");
+  const messageCount = messages.length;
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        await fetch(readUrl, { method: "POST" });
+      } catch {
+        return; // offline / transient — the next poll will retry
+      }
+      if (!cancelled && workspaceId) {
+        void globalMutate(`/api/workspaces/${workspaceId}/unread`);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [readUrl, messageCount, workspaceId, globalMutate]);
 
   async function sendMessage(body: string) {
     const res = await fetch(messagesUrl, {

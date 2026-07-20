@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import useSWR from "swr";
 import {
   ChevronDown,
   Hash,
@@ -30,6 +31,7 @@ import type {
   SidebarChannel,
   SidebarConversation,
   SidebarMember,
+  UnreadCounts,
 } from "@/lib/types";
 
 export function WorkspaceSidebar({
@@ -50,6 +52,24 @@ export function WorkspaceSidebar({
   const [channelDialog, setChannelDialog] = useState(false);
   const [dmDialog, setDmDialog] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Unread + mention badges, and live presence for DM avatars.
+  const { data: unread } = useSWR<UnreadCounts>(
+    `/api/workspaces/${workspace.id}/unread`,
+    { refreshInterval: 10000 },
+  );
+  const { data: liveMembers = members } = useSWR<SidebarMember[]>(
+    `/api/workspaces/${workspace.id}/members`,
+    { fallbackData: members, refreshInterval: 30000 },
+  );
+
+  const unreadForChannel = new Map(
+    (unread?.channels ?? []).map((c) => [c.id, c]),
+  );
+  const unreadForConversation = new Map(
+    (unread?.conversations ?? []).map((c) => [c.id, c]),
+  );
+  const presenceOf = new Map(liveMembers.map((m) => [m.id, m.online === true]));
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -117,6 +137,9 @@ export function WorkspaceSidebar({
           {channels.map((channel) => {
             const href = `/w/${workspace.id}/c/${channel.id}`;
             const active = pathname === href;
+            // While you're viewing a channel it's being marked read anyway.
+            const counts = active ? undefined : unreadForChannel.get(channel.id);
+            const hasUnread = (counts?.unread ?? 0) > 0;
             return (
               <li key={channel.id}>
                 <Link
@@ -125,7 +148,9 @@ export function WorkspaceSidebar({
                     "flex items-center gap-2 rounded-md px-2 py-1 text-[15px] transition",
                     active
                       ? "bg-[#1164a3] text-white"
-                      : "text-white/80 hover:bg-white/10",
+                      : hasUnread
+                        ? "font-bold text-white hover:bg-white/10"
+                        : "text-white/80 hover:bg-white/10",
                   )}
                 >
                   {channel.isPrivate ? (
@@ -134,6 +159,10 @@ export function WorkspaceSidebar({
                     <Hash className="size-3.5 shrink-0" />
                   )}
                   <span className="truncate">{channel.name}</span>
+                  <UnreadBadge
+                    unread={counts?.unread ?? 0}
+                    mentions={counts?.mentions ?? 0}
+                  />
                 </Link>
               </li>
             );
@@ -152,6 +181,10 @@ export function WorkspaceSidebar({
             const href = `/w/${workspace.id}/d/${conv.id}`;
             const active = pathname === href;
             const other = conv.users[0];
+            const counts = active
+              ? undefined
+              : unreadForConversation.get(conv.id);
+            const hasUnread = (counts?.unread ?? 0) > 0;
             return (
               <li key={conv.id}>
                 <Link
@@ -160,7 +193,9 @@ export function WorkspaceSidebar({
                     "flex items-center gap-2 rounded-md px-2 py-1 text-[15px] transition",
                     active
                       ? "bg-[#1164a3] text-white"
-                      : "text-white/80 hover:bg-white/10",
+                      : hasUnread
+                        ? "font-bold text-white hover:bg-white/10"
+                        : "text-white/80 hover:bg-white/10",
                   )}
                 >
                   {other && (
@@ -168,6 +203,7 @@ export function WorkspaceSidebar({
                       name={other.name}
                       image={other.image}
                       className="size-5 rounded"
+                      online={presenceOf.get(other.id) ?? false}
                     />
                   )}
                   <span className="truncate">
@@ -176,6 +212,10 @@ export function WorkspaceSidebar({
                       <span className="ml-1 text-xs text-white/50">you</span>
                     )}
                   </span>
+                  <UnreadBadge
+                    unread={counts?.unread ?? 0}
+                    mentions={counts?.mentions ?? 0}
+                  />
                 </Link>
               </li>
             );
@@ -239,5 +279,27 @@ function SectionHeader({
         {icon ?? <Plus className="size-4" />}
       </button>
     </div>
+  );
+}
+
+/** Slack-style badge: red with the mention count, otherwise a plain unread pill. */
+function UnreadBadge({ unread, mentions }: { unread: number; mentions: number }) {
+  if (unread <= 0) return null;
+  const mentioned = mentions > 0;
+  const value = mentioned ? mentions : unread;
+  return (
+    <span
+      title={
+        mentioned
+          ? `${mentions} mention${mentions === 1 ? "" : "s"}`
+          : `${unread} unread`
+      }
+      className={cn(
+        "ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none",
+        mentioned ? "bg-[#e01e5a] text-white" : "bg-white/25 text-white",
+      )}
+    >
+      {value > 99 ? "99+" : value}
+    </span>
   );
 }

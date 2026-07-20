@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handle, requireUser } from "@/lib/api";
 import { requireWorkspaceMember } from "@/lib/data";
+import { isOnline } from "@/lib/mentions";
 
 export async function GET(
   _req: NextRequest,
@@ -17,7 +18,15 @@ export async function GET(
       orderBy: { user: { name: "asc" } },
       select: {
         role: true,
-        user: { select: { id: true, name: true, email: true, image: true } },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            lastSeenAt: true,
+          },
+        },
       },
     });
 
@@ -29,6 +38,7 @@ export async function GET(
         image: m.user.image,
         role: m.role,
         isMe: m.user.id === user.id,
+        online: isOnline(m.user.lastSeenAt),
       })),
     );
   });

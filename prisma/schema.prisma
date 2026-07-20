@@ -21,6 +21,8 @@ model User {
   name         String
   passwordHash String
   image        String?
+  /// Heartbeat from the client; drives the online/offline presence dot.
+  lastSeenAt   DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -30,6 +32,7 @@ model User {
   conversationMembers ConversationMember[]
   messages            Message[]
   reactions           Reaction[]
+  readStates          ReadState[]
 }
 
 model Workspace {
@@ -70,9 +73,10 @@ model Channel {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  members   ChannelMember[]
-  messages  Message[]
+  workspace  Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members    ChannelMember[]
+  messages   Message[]
+  readStates ReadState[]
 
   @@unique([workspaceId, name])
 }
@@ -96,9 +100,10 @@ model Conversation {
   workspaceId String
   createdAt   DateTime @default(now())
 
-  workspace Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  members   ConversationMember[]
-  messages  Message[]
+  workspace  Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members    ConversationMember[]
+  messages   Message[]
+  readStates ReadState[]
 }
 
 model ConversationMember {
@@ -136,6 +141,24 @@ model Message {
   @@index([channelId, createdAt])
   @@index([conversationId, createdAt])
   @@index([parentId])
+  @@index([userId])
+}
+
+/// Per-user read cursor for a channel or a DM conversation. Anything created
+/// after `lastReadAt` counts as unread.
+model ReadState {
+  id             String   @id @default(cuid())
+  userId         String
+  channelId      String?
+  conversationId String?
+  lastReadAt     DateTime @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel      Channel?      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId])
+  @@unique([userId, conversationId])
   @@index([userId])
 }
 

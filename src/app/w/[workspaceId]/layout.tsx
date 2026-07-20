@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { WorkspaceRail } from "@/components/workspace-rail";
 import { WorkspaceSidebar } from "@/components/workspace-sidebar";
+import { PresenceHeartbeat } from "@/components/presence-heartbeat";
+import { isOnline } from "@/lib/mentions";
 
 export default async function WorkspaceLayout({
   children,
@@ -49,7 +51,15 @@ export default async function WorkspaceLayout({
       orderBy: { user: { name: "asc" } },
       select: {
         role: true,
-        user: { select: { id: true, name: true, email: true, image: true } },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            lastSeenAt: true,
+          },
+        },
       },
     }),
   ]);
@@ -72,10 +82,12 @@ export default async function WorkspaceLayout({
     image: m.user.image,
     role: m.role,
     isMe: m.user.id === user.id,
+    online: isOnline(m.user.lastSeenAt),
   }));
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
+      <PresenceHeartbeat />
       <WorkspaceRail workspaces={workspaces} activeId={workspaceId} />
       <WorkspaceSidebar
         workspace={membership.workspace}

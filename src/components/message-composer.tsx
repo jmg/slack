@@ -6,6 +6,7 @@ import { SendHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { cn } from "@/lib/utils";
+import { mentionHandle } from "@/lib/mentions";
 import type { SidebarMember } from "@/lib/types";
 
 const MENTION_RE = /(^|\s)@([a-zA-Z0-9._-]*)$/;
@@ -65,14 +66,15 @@ export function MessageComposer({
     const upto = value.slice(0, caret);
     const m = MENTION_RE.exec(upto);
     if (!m) return;
-    const handle = member.name.split(/\s+/)[0];
+    // Shared with the unread/mention counter so both agree on the token format.
+    const token = mentionHandle(member.name);
     const start = m.index + m[1].length; // position of the '@'
-    const next = `${value.slice(0, start)}@${handle} ${value.slice(caret)}`;
+    const next = `${value.slice(0, start)}${token} ${value.slice(caret)}`;
     setValue(next);
     setMentionQuery(null);
     requestAnimationFrame(() => {
       el?.focus();
-      const pos = start + handle.length + 2;
+      const pos = start + token.length + 1;
       el?.setSelectionRange(pos, pos);
       resize();
     });

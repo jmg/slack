@@ -1,0 +1,16 @@
+# deploycloud.toml — declarative build/deploy config, applied on every deploy.
+# Operational settings (scale, alerts, custom domains, add-ons) stay dashboard-managed.
+
+# Port the app listens on inside the container (the Procfile web process binds $PORT).
+port = 3000
+
+# Polled until it answers 2xx/3xx before traffic shifts over.
+healthPath = "/api/health"
+
+# NOTE: deliberately no [build] args here.
+# `next build` collects page data for every route, which is why a naive setup
+# needs DATABASE_URL at build time — but our Prisma client is constructed lazily
+# (src/lib/prisma.ts), so the build never opens a connection. That matters:
+# deploycloud passes build args as plain `docker --build-arg`, which Docker
+# records in image history, so a secret like DATABASE_URL would be recoverable
+# from the image. Keep secrets out of build args.
