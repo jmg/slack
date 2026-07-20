@@ -61,10 +61,21 @@ function createS3Driver(
   return {
     async put(key, body, contentType) {
       await ensureBucket();
-      const res = await client.fetch(`${base}/${key}`, {
+      const url = `${base}/${key}`;
+      // Sign first, then send the request ourselves. Going through
+      // client.fetch() re-wraps the body in a Request, which normalizes it to a
+      // stream — undici then sends it chunked with no Content-Length and S3/MinIO
+      // answers 411 Length Required. Handing fetch() the original ArrayBuffer
+      // keeps the length known.
+      const signed = await client.sign(url, {
         method: "PUT",
         body,
         headers: { "content-type": contentType },
+      });
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: signed.headers,
+        body,
       });
       if (!res.ok) {
         throw new Error(`Upload failed (${res.status})`);
