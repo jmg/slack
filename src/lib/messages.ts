@@ -1,8 +1,21 @@
 import { prisma } from "@/lib/prisma";
+import { serializeAttachment } from "@/lib/uploads";
+import type { SerializedAttachment } from "@/lib/upload-limits";
 
 export const messageInclude = {
   user: { select: { id: true, name: true, image: true } },
   reactions: { include: { user: { select: { id: true, name: true } } } },
+  attachments: {
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      filename: true,
+      contentType: true,
+      size: true,
+      width: true,
+      height: true,
+    },
+  },
   _count: { select: { replies: true } },
   replies: {
     orderBy: { createdAt: "desc" },
@@ -38,6 +51,7 @@ export type SerializedMessage = {
   replyCount: number;
   lastReplyAt: string | null;
   replyUsers: { id: string; name: string; image: string | null }[];
+  attachments: SerializedAttachment[];
 };
 
 export function serializeMessage(
@@ -77,6 +91,7 @@ export function serializeMessage(
     replyCount: message._count.replies,
     lastReplyAt: message.replies[0]?.createdAt.toISOString() ?? null,
     replyUsers,
+    attachments: deleted ? [] : message.attachments.map(serializeAttachment),
   };
 }
 

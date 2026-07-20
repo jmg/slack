@@ -78,11 +78,11 @@ export function ThreadPanel({
     onThreadChanged();
   }
 
-  async function sendReply(body: string) {
+  async function sendReply(body: string, attachmentIds: string[]) {
     const res = await fetch(key, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body }),
+      body: JSON.stringify({ body, attachmentIds }),
     });
     const reply = await res.json().catch(() => ({}));
     if (!res.ok) {

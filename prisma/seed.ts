@@ -59,6 +59,7 @@ async function main() {
         name,
         description,
         isPrivate,
+        createdById: memberIds[0],
         members: { create: memberIds.map((userId) => ({ userId })) },
       },
     });

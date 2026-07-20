@@ -8,6 +8,7 @@ import {
   messageInclude,
   serializeMessage,
 } from "@/lib/messages";
+import { claimAttachments } from "@/lib/uploads";
 
 export async function GET(
   _req: NextRequest,
@@ -37,9 +38,19 @@ export async function POST(
       return apiError(parsed.error.issues[0]?.message ?? "Invalid input");
     }
 
-    const message = await prisma.message.create({
-      data: { body: parsed.data.body, conversationId, userId: user.id },
-      include: messageInclude,
+    const message = await prisma.$transaction(async (tx) => {
+      const created = await tx.message.create({
+        data: { body: parsed.data.body, conversationId, userId: user.id },
+      });
+      await claimAttachments(tx, {
+        attachmentIds: parsed.data.attachmentIds,
+        userId: user.id,
+        messageId: created.id,
+      });
+      return tx.message.findUniqueOrThrow({
+        where: { id: created.id },
+        include: messageInclude,
+      });
     });
     return NextResponse.json(serializeMessage(message, user.id));
   });

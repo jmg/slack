@@ -33,6 +33,8 @@ model User {
   messages            Message[]
   reactions           Reaction[]
   readStates          ReadState[]
+  attachments         Attachment[]
+  createdChannels     Channel[]            @relation("ChannelCreator")
 }
 
 model Workspace {
@@ -48,6 +50,7 @@ model Workspace {
   members       WorkspaceMember[]
   channels      Channel[]
   conversations Conversation[]
+  attachments   Attachment[]
 }
 
 model WorkspaceMember {
@@ -70,15 +73,21 @@ model Channel {
   name        String
   description String?
   isPrivate   Boolean  @default(false)
+  /// Who created the channel. Nullable so pre-existing rows can be backfilled
+  /// and so the reference survives the creator being deleted. A channel with no
+  /// creator can only be managed by workspace ADMINs.
+  createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   workspace  Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy  User?           @relation("ChannelCreator", fields: [createdById], references: [id], onDelete: SetNull)
   members    ChannelMember[]
   messages   Message[]
   readStates ReadState[]
 
   @@unique([workspaceId, name])
+  @@index([createdById])
 }
 
 model ChannelMember {
@@ -137,11 +146,46 @@ model Message {
   parent       Message?      @relation("Thread", fields: [parentId], references: [id], onDelete: Cascade)
   replies      Message[]     @relation("Thread")
   reactions    Reaction[]
+  attachments  Attachment[]
 
   @@index([channelId, createdAt])
   @@index([conversationId, createdAt])
   @@index([parentId])
   @@index([userId])
+}
+
+/// A file stored in object storage (the MinIO add-on in production) and shown
+/// on a message. Uploads are created "pending" (messageId null) and claimed by
+/// the message that is sent with them.
+model Attachment {
+  id          String   @id @default(cuid())
+  /// Object key in the bucket: "w/<workspaceId>/<uuid><ext>". Kept charset-safe
+  /// so the signed URL path never needs percent-encoding (a mismatch between the
+  /// encoding used to sign and to request is the classic SigV4 403). The
+  /// user-facing name lives in `filename`, never in the key.
+  key         String   @unique
+  filename    String
+  contentType String
+  size        Int
+  /// Intrinsic pixel size for images (measured client-side, clamped server-side)
+  /// so the <img> reserves space and doesn't shift layout. Null for non-images.
+  width       Int?
+  height      Int?
+  /// Null while the upload is pending — the composer holds it before the message
+  /// exists. Set when the message is sent, in the same transaction.
+  messageId   String?
+  /// Always set: authorizes reads of a still-pending upload and scopes the key.
+  workspaceId String
+  uploaderId  String
+  createdAt   DateTime @default(now())
+
+  message   Message?  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  uploader  User      @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([uploaderId, messageId])
+  @@index([createdAt])
 }
 
 /// Per-user read cursor for a channel or a DM conversation. Anything created

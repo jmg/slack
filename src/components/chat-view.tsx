@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { toast } from "sonner";
-import { Hash, Lock } from "lucide-react";
+import { Hash, Lock, Users } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
 import { MessageList } from "@/components/message-list";
 import { MessageComposer } from "@/components/message-composer";
 import { ThreadPanel } from "@/components/thread-panel";
+import { ChannelMembersDialog } from "@/components/channel-members-dialog";
 import type { SerializedMessage } from "@/lib/messages";
 
 type IconType = "hash" | "lock" | "dm";
@@ -21,6 +22,7 @@ export function ChatView({
   iconType,
   avatar,
   placeholder,
+  channelId,
 }: {
   messagesUrl: string;
   currentUserId: string;
@@ -30,12 +32,15 @@ export function ChatView({
   iconType: IconType;
   avatar?: { name: string; image: string | null };
   placeholder: string;
+  /** Set for channels (not DMs) — enables the members dialog. */
+  channelId?: string;
 }) {
   const { data: messages = [], mutate } = useSWR<SerializedMessage[]>(
     messagesUrl,
     { refreshInterval: 3000 },
   );
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [membersOpen, setMembersOpen] = useState(false);
   const { mutate: globalMutate } = useSWRConfig();
 
   // Viewing a channel/DM marks it read — on open and as new messages land —
@@ -59,11 +64,11 @@ export function ChatView({
     };
   }, [readUrl, messageCount, workspaceId, globalMutate]);
 
-  async function sendMessage(body: string) {
+  async function sendMessage(body: string, attachmentIds: string[]) {
     const res = await fetch(messagesUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body }),
+      body: JSON.stringify({ body, attachmentIds }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -138,6 +143,17 @@ export function ChatView({
               <p className="truncate text-sm text-muted-foreground">{subtitle}</p>
             </>
           )}
+          {channelId && (
+            <button
+              type="button"
+              onClick={() => setMembersOpen(true)}
+              title="Channel members"
+              className="ml-auto flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
+              <Users className="size-3.5" />
+              Members
+            </button>
+          )}
         </header>
 
         <MessageList
@@ -178,6 +194,16 @@ export function ChatView({
           workspaceId={workspaceId}
         />
       </div>
+
+      {channelId && (
+        <ChannelMembersDialog
+          channelId={channelId}
+          workspaceId={workspaceId}
+          currentUserId={currentUserId}
+          open={membersOpen}
+          onOpenChange={setMembersOpen}
+        />
+      )}
 
       {threadId && (
         <ThreadPanel

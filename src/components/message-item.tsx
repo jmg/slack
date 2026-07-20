@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
 import { MessageBody } from "@/components/message-body";
+import { AttachmentList } from "@/components/attachment-list";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -131,12 +132,17 @@ export function MessageItem({
             This message was deleted
           </p>
         ) : (
-          <div className="flex items-baseline gap-1">
-            <MessageBody body={message.body} />
-            {message.editedAt && (
-              <span className="text-[11px] text-muted-foreground">(edited)</span>
+          <>
+            {message.body && (
+              <div className="flex items-baseline gap-1">
+                <MessageBody body={message.body} />
+                {message.editedAt && (
+                  <span className="text-[11px] text-muted-foreground">(edited)</span>
+                )}
+              </div>
             )}
-          </div>
+            <AttachmentList attachments={message.attachments} />
+          </>
         )}
 
         {message.reactions.length > 0 && !editing && (

@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
         channels: {
           create: {
             name: "general",
+            createdById: user.id,
             description: "This is the one channel that everyone is in.",
             members: { create: { userId: user.id } },
           },

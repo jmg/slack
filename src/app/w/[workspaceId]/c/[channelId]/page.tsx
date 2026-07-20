@@ -23,6 +23,7 @@ export default async function ChannelPage({
       title={channel.name}
       subtitle={channel.description ?? undefined}
       iconType={channel.isPrivate ? "lock" : "hash"}
+      channelId={channel.id}
       placeholder={`Message #${channel.name}`}
     />
   );

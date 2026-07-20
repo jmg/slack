@@ -58,6 +58,7 @@ export async function POST(
         name: parsed.data.name,
         description: parsed.data.description,
         isPrivate: parsed.data.isPrivate,
+        createdById: user.id,
         members: { create: { userId: user.id } },
       },
       select: { id: true, name: true, description: true, isPrivate: true },
