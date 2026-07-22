@@ -13,6 +13,7 @@ import {
   Plus,
   MessageSquarePlus,
   Search,
+  Settings,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -118,6 +119,13 @@ export function WorkspaceSidebar({
             </span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem
+            render={
+              <Link href={`/w/${workspace.id}/settings`}>
+                <Settings className="size-4" /> Settings
+              </Link>
+            }
+          />
           <DropdownMenuItem render={<Link href="/workspaces">Switch workspace</Link>} />
           <DropdownMenuItem onClick={signOut} variant="destructive">
             <LogOut className="size-4" /> Sign out
