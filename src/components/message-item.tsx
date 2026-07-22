@@ -25,7 +25,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { formatMessageTime } from "@/lib/format";
+import { formatCompactTime, formatMessageTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { SerializedMessage } from "@/lib/messages";
 
@@ -92,7 +92,7 @@ export function MessageItem({
           <UserAvatar name={message.author.name} image={message.author.image} />
         ) : (
           <span className="mt-0.5 hidden whitespace-nowrap pr-1 text-right text-[10px] leading-5 tabular-nums text-muted-foreground group-hover:block">
-            {time}
+            {formatCompactTime(message.createdAt)}
           </span>
         )}
       </div>

@@ -30,6 +30,11 @@ export function formatMessageTime(iso: string): string {
   return format(new Date(iso), "h:mm a");
 }
 
+/** Compact time (no AM/PM) for the narrow hover gutter on grouped messages. */
+export function formatCompactTime(iso: string): string {
+  return format(new Date(iso), "h:mm");
+}
+
 export function formatDayDivider(iso: string): string {
   const date = new Date(iso);
   if (isToday(date)) return "Today";

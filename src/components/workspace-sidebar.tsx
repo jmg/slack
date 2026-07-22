@@ -29,6 +29,7 @@ import { CreateChannelDialog } from "@/components/create-channel-dialog";
 import { NewDmDialog } from "@/components/new-dm-dialog";
 import { SearchDialog } from "@/components/search-dialog";
 import { InviteDialog } from "@/components/invite-dialog";
+import { QuickSwitcher } from "@/components/quick-switcher";
 import { cn } from "@/lib/utils";
 import type {
   CurrentUser,
@@ -61,6 +62,7 @@ export function WorkspaceSidebar({
   const [dmDialog, setDmDialog] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
 
   // Live, event-driven copies of everything in the rail. The workspace SSE
   // stream (useWorkspaceEvents, mounted in the layout) revalidates these keys as
@@ -97,7 +99,7 @@ export function WorkspaceSidebar({
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setSearchOpen(true);
+        setSwitcherOpen(true);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -157,14 +159,22 @@ export function WorkspaceSidebar({
       <div className="px-2 pt-2">
         <button
           type="button"
-          onClick={() => setSearchOpen(true)}
+          onClick={() => setSwitcherOpen(true)}
           className="flex w-full items-center gap-2 rounded-md bg-white/10 px-2 py-1.5 text-sm text-white/70 transition hover:bg-white/15"
         >
           <Search className="size-3.5" />
-          <span>Search</span>
+          <span>Jump to…</span>
           <kbd className="ml-auto rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-medium">
             ⌘K
           </kbd>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          className="mt-1 flex w-full items-center gap-2 rounded-md px-2 py-1 text-xs text-white/50 transition hover:bg-white/10 hover:text-white/70"
+        >
+          <Search className="size-3" />
+          <span>Search messages</span>
         </button>
       </div>
 
@@ -299,6 +309,15 @@ export function WorkspaceSidebar({
         workspaceId={workspace.id}
         open={inviteOpen}
         onOpenChange={setInviteOpen}
+      />
+      <QuickSwitcher
+        key={switcherOpen ? "open" : "closed"}
+        workspaceId={workspace.id}
+        channels={liveChannels}
+        conversations={liveConversations}
+        members={liveMembers}
+        open={switcherOpen}
+        onOpenChange={setSwitcherOpen}
       />
     </aside>
   );
