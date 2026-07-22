@@ -44,3 +44,8 @@ next-env.d.ts
 
 # local dev object storage fallback
 .uploads/
+
+# curl cookie jars / scratch — never commit session tokens
+/f.txt
+/v.txt
+*.cookies
