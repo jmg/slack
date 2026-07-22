@@ -6,12 +6,17 @@ const HEARTBEAT_MS = 60_000;
 
 /**
  * Keeps the current user's `lastSeenAt` fresh so teammates see them online.
- * Renders nothing; mounted once inside the workspace shell.
+ * Renders nothing; mounted once inside the workspace shell. Passing the active
+ * workspace lets the server push a presence refresh to that workspace's members.
  */
-export function PresenceHeartbeat() {
+export function PresenceHeartbeat({ workspaceId }: { workspaceId: string }) {
   useEffect(() => {
     const ping = () => {
-      void fetch("/api/presence", { method: "POST" }).catch(() => {});
+      void fetch("/api/presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId }),
+      }).catch(() => {});
     };
     ping();
     const id = setInterval(ping, HEARTBEAT_MS);
@@ -23,7 +28,7 @@ export function PresenceHeartbeat() {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [workspaceId]);
 
   return null;
 }

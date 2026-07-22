@@ -53,14 +53,26 @@ export function WorkspaceSidebar({
   const [dmDialog, setDmDialog] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // Unread + mention badges, and live presence for DM avatars.
+  // Live, event-driven copies of everything in the rail. The workspace SSE
+  // stream (useWorkspaceEvents, mounted in the layout) revalidates these keys as
+  // channels, DMs, members and unread counts change — no reload, no fast poll.
+  // The one remaining interval is a slow fallback so a user going *offline*
+  // (a time-based transition nobody emits an event for) is still reflected.
   const { data: unread } = useSWR<UnreadCounts>(
     `/api/workspaces/${workspace.id}/unread`,
-    { refreshInterval: 10000 },
   );
+  const { data: liveChannels = channels } = useSWR<SidebarChannel[]>(
+    `/api/workspaces/${workspace.id}/channels`,
+    { fallbackData: channels },
+  );
+  const { data: liveConversations = conversations } =
+    useSWR<SidebarConversation[]>(
+      `/api/workspaces/${workspace.id}/conversations`,
+      { fallbackData: conversations },
+    );
   const { data: liveMembers = members } = useSWR<SidebarMember[]>(
     `/api/workspaces/${workspace.id}/members`,
-    { fallbackData: members, refreshInterval: 30000 },
+    { fallbackData: members, refreshInterval: 60000 },
   );
 
   const unreadForChannel = new Map(
@@ -134,7 +146,7 @@ export function WorkspaceSidebar({
           addLabel="Create channel"
         />
         <ul className="mb-4 mt-1 space-y-0.5">
-          {channels.map((channel) => {
+          {liveChannels.map((channel) => {
             const href = `/w/${workspace.id}/c/${channel.id}`;
             const active = pathname === href;
             // While you're viewing a channel it's being marked read anyway.
@@ -177,7 +189,7 @@ export function WorkspaceSidebar({
           icon={<MessageSquarePlus className="size-4" />}
         />
         <ul className="mt-1 space-y-0.5">
-          {conversations.map((conv) => {
+          {liveConversations.map((conv) => {
             const href = `/w/${workspace.id}/d/${conv.id}`;
             const active = pathname === href;
             const other = conv.users[0];
@@ -220,7 +232,7 @@ export function WorkspaceSidebar({
               </li>
             );
           })}
-          {conversations.length === 0 && (
+          {liveConversations.length === 0 && (
             <li className="px-2 py-1 text-sm text-white/50">
               No direct messages yet.
             </li>
@@ -240,7 +252,7 @@ export function WorkspaceSidebar({
       />
       <NewDmDialog
         workspaceId={workspace.id}
-        members={members}
+        members={liveMembers}
         open={dmDialog}
         onOpenChange={setDmDialog}
       />

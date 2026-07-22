@@ -23,7 +23,9 @@ export function ThreadPanel({
   onThreadChanged: () => void;
 }) {
   const key = `/api/messages/${messageId}/thread`;
-  const { data, mutate } = useSWR<ThreadData>(key, { refreshInterval: 3000 });
+  // SSE-driven: a "thread" event revalidates this key when a reply is posted,
+  // edited, deleted or reacted to. No polling.
+  const { data, mutate } = useSWR<ThreadData>(key);
 
   function patchLocal(updated: SerializedMessage) {
     void mutate((cur) => {

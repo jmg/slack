@@ -35,10 +35,9 @@ export function ChatView({
   /** Set for channels (not DMs) — enables the members dialog. */
   channelId?: string;
 }) {
-  const { data: messages = [], mutate } = useSWR<SerializedMessage[]>(
-    messagesUrl,
-    { refreshInterval: 3000 },
-  );
+  // No polling: the workspace SSE stream revalidates this key the instant a
+  // message lands, is edited/deleted, or gets a reaction (see useWorkspaceEvents).
+  const { data: messages = [], mutate } = useSWR<SerializedMessage[]>(messagesUrl);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
   const { mutate: globalMutate } = useSWRConfig();

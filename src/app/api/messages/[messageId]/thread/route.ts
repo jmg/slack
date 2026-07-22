@@ -9,6 +9,7 @@ import {
   serializeMessage,
 } from "@/lib/messages";
 import { claimAttachments } from "@/lib/uploads";
+import { broadcastMessage } from "@/lib/realtime";
 
 export async function GET(
   _req: NextRequest,
@@ -69,6 +70,12 @@ export async function POST(
         where: { id: created.id },
         include: messageInclude,
       });
+    });
+    await broadcastMessage({
+      id: reply.id,
+      channelId: parent.channelId,
+      conversationId: parent.conversationId,
+      parentId: parent.id,
     });
     return NextResponse.json(serializeMessage(reply, user.id));
   });

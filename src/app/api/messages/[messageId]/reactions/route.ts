@@ -4,6 +4,7 @@ import { apiError, handle, requireUser } from "@/lib/api";
 import { reactionSchema } from "@/lib/validators";
 import { requireChannelAccess, requireConversationMember } from "@/lib/data";
 import { messageInclude, serializeMessage } from "@/lib/messages";
+import { broadcastMessage } from "@/lib/realtime";
 
 export async function POST(
   req: NextRequest,
@@ -22,7 +23,12 @@ export async function POST(
 
     const message = await prisma.message.findUnique({
       where: { id: messageId },
-      select: { id: true, channelId: true, conversationId: true },
+      select: {
+        id: true,
+        channelId: true,
+        conversationId: true,
+        parentId: true,
+      },
     });
     if (!message) return apiError("Message not found", 404);
 
@@ -50,6 +56,7 @@ export async function POST(
       where: { id: messageId },
       include: messageInclude,
     });
+    await broadcastMessage(message);
     return NextResponse.json(serializeMessage(updated, user.id));
   });
 }

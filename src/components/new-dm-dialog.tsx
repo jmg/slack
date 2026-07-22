@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSWRConfig } from "swr";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ export function NewDmDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const [query, setQuery] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
 
@@ -48,7 +50,9 @@ export function NewDmDialog({
       if (!res.ok) throw new Error(data.error ?? "Could not open conversation");
       onOpenChange(false);
       setQuery("");
-      router.refresh();
+      // Reflect the new conversation in the sidebar right away; other members
+      // get it over SSE.
+      void mutate(`/api/workspaces/${workspaceId}/conversations`);
       router.push(`/w/${workspaceId}/d/${data.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not open conversation");

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSWRConfig } from "swr";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ export function CreateChannelDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
@@ -51,7 +53,9 @@ export function CreateChannelDialog({
       setName("");
       setDescription("");
       setIsPrivate(false);
-      router.refresh();
+      // Show it in the sidebar immediately for the creator; the SSE broadcast
+      // handles every other connected member.
+      void mutate(`/api/workspaces/${workspaceId}/channels`);
       router.push(`/w/${workspaceId}/c/${data.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not create channel");

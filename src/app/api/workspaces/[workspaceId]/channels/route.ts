@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { createChannelSchema } from "@/lib/validators";
 import { requireWorkspaceMember } from "@/lib/data";
+import { broadcastChannelCreated } from "@/lib/realtime";
 
 export async function GET(
   _req: NextRequest,
@@ -62,6 +63,12 @@ export async function POST(
         members: { create: { userId: user.id } },
       },
       select: { id: true, name: true, description: true, isPrivate: true },
+    });
+
+    await broadcastChannelCreated({
+      workspaceId,
+      isPrivate: channel.isPrivate,
+      createdById: user.id,
     });
 
     return NextResponse.json(channel);

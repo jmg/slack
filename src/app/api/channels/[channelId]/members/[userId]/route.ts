@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { requireChannelAccess } from "@/lib/data";
+import { broadcastChannelMembers } from "@/lib/realtime";
+import { publishToUsers } from "@/lib/events";
 
 /**
  * Remove someone from a channel — or leave it yourself.
@@ -58,6 +60,14 @@ export async function DELETE(
     await prisma.channelMember.delete({
       where: { channelId_userId: { channelId, userId } },
     });
+
+    // Tell the remaining members (member dialog + who-can-see-it) the roster
+    // changed. Notify the removed person separately — they're no longer in the
+    // audience, but a now-invisible private channel must drop from their sidebar.
+    await broadcastChannelMembers(channelId);
+    if (channel.isPrivate) {
+      publishToUsers(channel.workspaceId, [userId], { kind: "channels" });
+    }
 
     return NextResponse.json({ ok: true });
   });

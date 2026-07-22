@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { createConversationSchema } from "@/lib/validators";
 import { requireWorkspaceMember } from "@/lib/data";
+import { broadcastConversationCreated } from "@/lib/realtime";
 
 export async function GET(
   _req: NextRequest,
@@ -86,6 +87,7 @@ export async function POST(
         members: { create: userIds.map((id) => ({ userId: id })) },
       },
     });
+    await broadcastConversationCreated(workspaceId, userIds);
     return NextResponse.json({ id: conversation.id });
   });
 }

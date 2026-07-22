@@ -5,6 +5,7 @@ import { createMessageSchema } from "@/lib/validators";
 import { requireChannelAccess } from "@/lib/data";
 import { listChannelMessages, messageInclude, serializeMessage } from "@/lib/messages";
 import { claimAttachments } from "@/lib/uploads";
+import { broadcastMessage } from "@/lib/realtime";
 
 export async function GET(
   _req: NextRequest,
@@ -49,6 +50,12 @@ export async function POST(
         where: { id: created.id },
         include: messageInclude,
       });
+    });
+    await broadcastMessage({
+      id: message.id,
+      channelId,
+      conversationId: null,
+      parentId: null,
     });
     return NextResponse.json(serializeMessage(message, user.id));
   });

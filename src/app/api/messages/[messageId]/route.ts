@@ -4,6 +4,7 @@ import { apiError, handle, requireUser } from "@/lib/api";
 import { updateMessageSchema } from "@/lib/validators";
 import { requireMessageAccess } from "@/lib/data";
 import { messageInclude, serializeMessage } from "@/lib/messages";
+import { broadcastMessage } from "@/lib/realtime";
 
 export async function PATCH(
   req: NextRequest,
@@ -31,6 +32,7 @@ export async function PATCH(
       data: { body: parsed.data.body, editedAt: new Date() },
       include: messageInclude,
     });
+    await broadcastMessage(message);
     return NextResponse.json(serializeMessage(updated, user.id));
   });
 }
@@ -64,6 +66,7 @@ export async function DELETE(
     } else {
       await prisma.message.delete({ where: { id: messageId } });
     }
+    await broadcastMessage(message);
     return NextResponse.json({ ok: true });
   });
 }
