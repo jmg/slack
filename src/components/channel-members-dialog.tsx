@@ -30,6 +30,8 @@ type ChannelMembers = {
   createdById: string | null;
   canManage: boolean;
   archived: boolean;
+  name: string;
+  description: string | null;
   members: ChannelMember[];
 };
 
@@ -54,9 +56,45 @@ export function ChannelMembersDialog({
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [channelBusy, setChannelBusy] = useState(false);
+  // Edited values override the server value only once the user types (avoids
+  // syncing state in an effect).
+  const [nameEdit, setNameEdit] = useState<string | null>(null);
+  const [topicEdit, setTopicEdit] = useState<string | null>(null);
 
   const inChannel = new Set((data?.members ?? []).map((m) => m.id));
   const canManage = data?.canManage ?? false;
+
+  const nameVal = nameEdit ?? data?.name ?? "";
+  const topicVal = topicEdit ?? data?.description ?? "";
+  const detailsChanged =
+    (nameEdit !== null && nameEdit !== (data?.name ?? "")) ||
+    (topicEdit !== null && topicEdit !== (data?.description ?? ""));
+
+  const normalizeName = (v: string) =>
+    v.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
+  async function saveDetails() {
+    setChannelBusy(true);
+    try {
+      const res = await fetch(`/api/channels/${channelId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: nameVal, description: topicVal || null }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error ?? "Could not save");
+      setNameEdit(null);
+      setTopicEdit(null);
+      await mutate();
+      if (workspaceId) void globalMutate(`/api/workspaces/${workspaceId}/channels`);
+      router.refresh();
+      toast.success("Channel updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save");
+    } finally {
+      setChannelBusy(false);
+    }
+  }
 
   async function toggleArchive() {
     if (!data) return;
@@ -148,6 +186,36 @@ export function ChannelMembersDialog({
               : "Loading…"}
           </DialogDescription>
         </DialogHeader>
+
+        {canManage && (
+          <div className="flex flex-col gap-2 border-b pb-3">
+            <div className="flex items-center rounded-md border px-2 focus-within:ring-1 focus-within:ring-ring">
+              <span className="text-muted-foreground">#</span>
+              <Input
+                value={nameVal}
+                onChange={(e) => setNameEdit(normalizeName(e.target.value))}
+                placeholder="channel-name"
+                className="border-0 shadow-none focus-visible:ring-0"
+              />
+            </div>
+            <Input
+              value={topicVal}
+              onChange={(e) => setTopicEdit(e.target.value)}
+              placeholder="Add a topic"
+              maxLength={280}
+            />
+            {detailsChanged && (
+              <button
+                type="button"
+                onClick={saveDetails}
+                disabled={channelBusy || !nameVal.trim()}
+                className="self-start rounded-md bg-[#611f69] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[#4a154b] disabled:opacity-50"
+              >
+                Save changes
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="max-h-56 overflow-y-auto">
           {(data?.members ?? []).map((m) => (

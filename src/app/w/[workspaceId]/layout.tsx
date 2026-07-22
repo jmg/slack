@@ -7,6 +7,7 @@ import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { WorkspaceRealtime } from "@/components/workspace-realtime";
 import { WorkspaceNotifications } from "@/components/workspace-notifications";
 import { isOnline } from "@/lib/mentions";
+import { themeFor } from "@/lib/themes";
 
 export default async function WorkspaceLayout({
   children,
@@ -106,6 +107,7 @@ export default async function WorkspaceLayout({
         }))}
         conversations={conversations}
         members={members}
+        theme={themeFor(user.chatTheme)}
         user={{
           id: user.id,
           name: user.name,

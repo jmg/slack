@@ -4,27 +4,49 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, Check, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { CHAT_THEMES } from "@/lib/themes";
 
 export function SettingsView({
   workspaceId,
   workspaceName,
   isAdmin,
   emailNotifications,
+  chatTheme,
 }: {
   workspaceId: string;
   workspaceName: string;
   isAdmin: boolean;
   emailNotifications: boolean;
+  chatTheme: string;
 }) {
   const router = useRouter();
   const [name, setName] = useState(workspaceName);
   const [savingName, setSavingName] = useState(false);
   const [emailOn, setEmailOn] = useState(emailNotifications);
   const [savingEmail, setSavingEmail] = useState(false);
+  const [theme, setTheme] = useState(chatTheme);
+
+  async function pickTheme(key: string) {
+    const previous = theme;
+    setTheme(key);
+    try {
+      const res = await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatTheme: key }),
+      });
+      if (!res.ok) throw new Error();
+      router.refresh(); // re-render the layout so the sidebar recolors live
+    } catch {
+      setTheme(previous);
+      toast.error("Could not change the theme");
+    }
+  }
 
   async function saveName(e: React.FormEvent) {
     e.preventDefault();
@@ -102,6 +124,43 @@ export function SettingsView({
               </p>
             )}
           </form>
+        </section>
+
+        {/* Appearance */}
+        <section className="mt-6 rounded-lg border p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Sidebar theme
+          </h2>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {Object.entries(CHAT_THEMES).map(([key, t]) => {
+              const selected = key === theme;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => pickTheme(key)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg border p-2.5 text-left transition hover:bg-muted/50",
+                    selected ? "border-foreground ring-1 ring-foreground" : "border-border",
+                  )}
+                >
+                  <span
+                    className="flex size-9 shrink-0 items-center justify-center rounded-md"
+                    style={{ backgroundColor: t.sidebar }}
+                  >
+                    <span
+                      className="size-3.5 rounded-full"
+                      style={{ backgroundColor: t.active }}
+                    />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    {t.label}
+                  </span>
+                  {selected && <Check className="size-4 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
         </section>
 
         {/* Notifications */}

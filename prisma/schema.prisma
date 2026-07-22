@@ -30,6 +30,8 @@ model User {
   /// Dedupe cursor for that cron: messages created at/before this have already
   /// been considered for an email, so we never notify the same message twice.
   lastNotifiedAt DateTime?
+  /// Sidebar color theme key (see src/lib/themes.ts).
+  chatTheme    String   @default("aubergine")
   /// Heartbeat from the client; drives the online/offline presence dot.
   lastSeenAt   DateTime?
   createdAt    DateTime @default(now())

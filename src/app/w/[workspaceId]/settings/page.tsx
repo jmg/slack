@@ -24,6 +24,7 @@ export default async function SettingsPage({
       workspaceName={membership.workspace.name}
       isAdmin={membership.role === "ADMIN"}
       emailNotifications={user.emailNotifications}
+      chatTheme={user.chatTheme}
     />
   );
 }

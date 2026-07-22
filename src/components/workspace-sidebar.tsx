@@ -37,18 +37,22 @@ import type {
   SidebarMember,
   UnreadCounts,
 } from "@/lib/types";
+import type { ChatTheme } from "@/lib/themes";
+import type { CSSProperties } from "react";
 
 export function WorkspaceSidebar({
   workspace,
   channels,
   conversations,
   members,
+  theme,
   user,
 }: {
   workspace: { id: string; name: string };
   channels: SidebarChannel[];
   conversations: SidebarConversation[];
   members: SidebarMember[];
+  theme: ChatTheme;
   user: CurrentUser;
 }) {
   const pathname = usePathname();
@@ -107,7 +111,15 @@ export function WorkspaceSidebar({
   }
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col bg-[#3f0e40] text-white/80">
+    <aside
+      className="flex w-64 shrink-0 flex-col bg-[var(--ws-sidebar)] text-white/80"
+      style={
+        {
+          "--ws-sidebar": theme.sidebar,
+          "--ws-active": theme.active,
+        } as CSSProperties
+      }
+    >
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3 text-left outline-none transition hover:bg-white/5">
           <span className="truncate text-[15px] font-bold text-white">
@@ -178,7 +190,7 @@ export function WorkspaceSidebar({
                   className={cn(
                     "flex items-center gap-2 rounded-md px-2 py-1 text-[15px] transition",
                     active
-                      ? "bg-[#1164a3] text-white"
+                      ? "bg-[var(--ws-active)] text-white"
                       : hasUnread
                         ? "font-bold text-white hover:bg-white/10"
                         : "text-white/80 hover:bg-white/10",
@@ -226,7 +238,7 @@ export function WorkspaceSidebar({
                   className={cn(
                     "flex items-center gap-2 rounded-md px-2 py-1 text-[15px] transition",
                     active
-                      ? "bg-[#1164a3] text-white"
+                      ? "bg-[var(--ws-active)] text-white"
                       : hasUnread
                         ? "font-bold text-white hover:bg-white/10"
                         : "text-white/80 hover:bg-white/10",

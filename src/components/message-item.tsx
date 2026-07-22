@@ -91,7 +91,7 @@ export function MessageItem({
         {showHeader ? (
           <UserAvatar name={message.author.name} image={message.author.image} />
         ) : (
-          <span className="mt-0.5 hidden pr-1 text-right text-[10px] leading-5 text-muted-foreground group-hover:block">
+          <span className="mt-0.5 hidden whitespace-nowrap pr-1 text-right text-[10px] leading-5 tabular-nums text-muted-foreground group-hover:block">
             {time}
           </span>
         )}

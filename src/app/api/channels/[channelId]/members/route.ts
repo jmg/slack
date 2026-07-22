@@ -52,6 +52,8 @@ export async function GET(
       createdById: channel.createdById,
       canManage,
       archived: channel.archivedAt != null,
+      name: channel.name,
+      description: channel.description,
       members: members.map((m) => ({
         id: m.user.id,
         name: m.user.name,

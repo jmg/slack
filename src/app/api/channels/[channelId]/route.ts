@@ -8,9 +8,27 @@ import {
   broadcastChannelUpdated,
 } from "@/lib/realtime";
 
-const patchSchema = z.object({ archived: z.boolean() });
+const patchSchema = z
+  .object({
+    archived: z.boolean().optional(),
+    name: z
+      .string()
+      .trim()
+      .min(1)
+      .max(80)
+      .regex(/^[a-z0-9-]+$/, "Use lowercase letters, numbers and dashes only")
+      .optional(),
+    description: z.string().trim().max(280).nullish(),
+  })
+  .refine(
+    (d) =>
+      d.archived !== undefined ||
+      d.name !== undefined ||
+      d.description !== undefined,
+    { message: "Nothing to update" },
+  );
 
-/** Archive / unarchive a channel. Creator or workspace ADMIN only. */
+/** Archive/unarchive, rename, or set the topic. Creator or workspace ADMIN only. */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> },
@@ -18,14 +36,30 @@ export async function PATCH(
   return handle(async () => {
     const user = await requireUser();
     const { channelId } = await params;
-    await requireChannelManager(user.id, channelId);
+    const channel = await requireChannelManager(user.id, channelId);
 
     const parsed = patchSchema.safeParse(await req.json().catch(() => null));
-    if (!parsed.success) return apiError("Invalid input");
+    if (!parsed.success) {
+      return apiError(parsed.error.issues[0]?.message ?? "Invalid input");
+    }
+    const { archived, name, description } = parsed.data;
+
+    // Names are unique per workspace.
+    if (name && name !== channel.name) {
+      const clash = await prisma.channel.findUnique({
+        where: { workspaceId_name: { workspaceId: channel.workspaceId, name } },
+        select: { id: true },
+      });
+      if (clash) return apiError("A channel with that name already exists", 409);
+    }
 
     await prisma.channel.update({
       where: { id: channelId },
-      data: { archivedAt: parsed.data.archived ? new Date() : null },
+      data: {
+        ...(archived !== undefined ? { archivedAt: archived ? new Date() : null } : {}),
+        ...(name !== undefined ? { name } : {}),
+        ...(description !== undefined ? { description } : {}),
+      },
     });
     await broadcastChannelUpdated(channelId);
     return NextResponse.json({ ok: true });
