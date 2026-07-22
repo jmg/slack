@@ -36,7 +36,7 @@ export default async function WorkspaceLayout({
         OR: [{ isPrivate: false }, { members: { some: { userId: user.id } } }],
       },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, isPrivate: true },
+      select: { id: true, name: true, isPrivate: true, archivedAt: true },
     }),
     prisma.conversation.findMany({
       where: { workspaceId, members: { some: { userId: user.id } } },
@@ -93,7 +93,12 @@ export default async function WorkspaceLayout({
       <WorkspaceRail workspaces={workspaces} activeId={workspaceId} />
       <WorkspaceSidebar
         workspace={membership.workspace}
-        channels={channels}
+        channels={channels.map((c) => ({
+          id: c.id,
+          name: c.name,
+          isPrivate: c.isPrivate,
+          archived: c.archivedAt != null,
+        }))}
         conversations={conversations}
         members={members}
         user={{

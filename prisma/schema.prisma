@@ -77,6 +77,8 @@ model Channel {
   name        String
   description String?
   isPrivate   Boolean  @default(false)
+  /// Set when the channel is archived: hidden from posting, kept for history.
+  archivedAt  DateTime?
   /// Who created the channel. Nullable so pre-existing rows can be backfilled
   /// and so the reference survives the creator being deleted. A channel with no
   /// creator can only be managed by workspace ADMINs.

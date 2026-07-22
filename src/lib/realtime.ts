@@ -143,6 +143,31 @@ export async function broadcastChannelMembers(channelId: string) {
   });
 }
 
+/** A channel's own attributes changed (archived, renamed) — refresh the list. */
+export async function broadcastChannelUpdated(channelId: string) {
+  await safely(async () => {
+    const audience = await audienceForChannel(channelId);
+    if (!audience) return;
+    emit(audience, { kind: "channels" });
+  });
+}
+
+/**
+ * A channel was deleted. The row is already gone, so the audience can't be
+ * resolved from it — the caller passes what it captured before deleting.
+ */
+export function broadcastChannelRemoved(channel: {
+  workspaceId: string;
+  isPrivate: boolean;
+  memberIds: string[];
+}) {
+  if (channel.isPrivate) {
+    publishToUsers(channel.workspaceId, channel.memberIds, { kind: "channels" });
+  } else {
+    publishToWorkspace(channel.workspaceId, { kind: "channels" });
+  }
+}
+
 /** Workspace membership or presence changed. */
 export function broadcastWorkspaceMembers(workspaceId: string) {
   publishToWorkspace(workspaceId, { kind: "members" });

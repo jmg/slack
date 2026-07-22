@@ -25,9 +25,18 @@ export async function GET(
         name: true,
         description: true,
         isPrivate: true,
+        archivedAt: true,
       },
     });
-    return NextResponse.json(channels);
+    return NextResponse.json(
+      channels.map((c) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        isPrivate: c.isPrivate,
+        archived: c.archivedAt != null,
+      })),
+    );
   });
 }
 

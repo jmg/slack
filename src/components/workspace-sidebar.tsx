@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
 import {
+  Archive,
   ChevronDown,
   Hash,
   Lock,
@@ -156,6 +157,7 @@ export function WorkspaceSidebar({
               <li key={channel.id}>
                 <Link
                   href={href}
+                  title={channel.archived ? "Archived channel" : undefined}
                   className={cn(
                     "flex items-center gap-2 rounded-md px-2 py-1 text-[15px] transition",
                     active
@@ -163,9 +165,12 @@ export function WorkspaceSidebar({
                       : hasUnread
                         ? "font-bold text-white hover:bg-white/10"
                         : "text-white/80 hover:bg-white/10",
+                    channel.archived && !active && "opacity-50",
                   )}
                 >
-                  {channel.isPrivate ? (
+                  {channel.archived ? (
+                    <Archive className="size-3.5 shrink-0" />
+                  ) : channel.isPrivate ? (
                     <Lock className="size-3.5 shrink-0" />
                   ) : (
                     <Hash className="size-3.5 shrink-0" />

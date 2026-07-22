@@ -198,7 +198,6 @@ export function ChatView({
         <ChannelMembersDialog
           channelId={channelId}
           workspaceId={workspaceId}
-          currentUserId={currentUserId}
           open={membersOpen}
           onOpenChange={setMembersOpen}
         />

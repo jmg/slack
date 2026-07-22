@@ -2,6 +2,7 @@ export type SidebarChannel = {
   id: string;
   name: string;
   isPrivate: boolean;
+  archived?: boolean;
 };
 
 export type SidebarMember = {

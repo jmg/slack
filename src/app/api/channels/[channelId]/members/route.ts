@@ -18,6 +18,19 @@ export async function GET(
     const { channelId } = await params;
     const channel = await requireChannelAccess(user.id, channelId);
 
+    // The current user may manage (archive/delete) the channel if they created
+    // it or are a workspace ADMIN.
+    let canManage = channel.createdById === user.id;
+    if (!canManage) {
+      const membership = await prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: { workspaceId: channel.workspaceId, userId: user.id },
+        },
+        select: { role: true },
+      });
+      canManage = membership?.role === "ADMIN";
+    }
+
     const members = await prisma.channelMember.findMany({
       where: { channelId },
       orderBy: { user: { name: "asc" } },
@@ -37,6 +50,8 @@ export async function GET(
     return NextResponse.json({
       isPrivate: channel.isPrivate,
       createdById: channel.createdById,
+      canManage,
+      archived: channel.archivedAt != null,
       members: members.map((m) => ({
         id: m.user.id,
         name: m.user.name,

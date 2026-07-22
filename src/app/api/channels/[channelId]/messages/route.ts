@@ -27,7 +27,10 @@ export async function POST(
   return handle(async () => {
     const user = await requireUser();
     const { channelId } = await params;
-    await requireChannelAccess(user.id, channelId);
+    const channel = await requireChannelAccess(user.id, channelId);
+    if (channel.archivedAt) {
+      return apiError("This channel is archived", 403);
+    }
 
     const json = await req.json().catch(() => null);
     const parsed = createMessageSchema.safeParse(json);

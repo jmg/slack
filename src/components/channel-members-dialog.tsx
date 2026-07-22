@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSWRConfig } from "swr";
 import useSWR from "swr";
 import { toast } from "sonner";
-import { UserMinus, UserPlus } from "lucide-react";
+import { Archive, ArchiveRestore, Trash2, UserMinus, UserPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,22 +28,24 @@ type ChannelMember = {
 type ChannelMembers = {
   isPrivate: boolean;
   createdById: string | null;
+  canManage: boolean;
+  archived: boolean;
   members: ChannelMember[];
 };
 
 export function ChannelMembersDialog({
   channelId,
   workspaceId,
-  currentUserId,
   open,
   onOpenChange,
 }: {
   channelId: string;
   workspaceId?: string;
-  currentUserId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const router = useRouter();
+  const { mutate: globalMutate } = useSWRConfig();
   const key = `/api/channels/${channelId}/members`;
   const { data, mutate } = useSWR<ChannelMembers>(open ? key : null);
   const { data: workspaceMembers = [] } = useSWR<SidebarMember[]>(
@@ -49,10 +53,50 @@ export function ChannelMembersDialog({
   );
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [channelBusy, setChannelBusy] = useState(false);
 
   const inChannel = new Set((data?.members ?? []).map((m) => m.id));
-  const canManage =
-    data?.createdById === currentUserId || data?.createdById === null;
+  const canManage = data?.canManage ?? false;
+
+  async function toggleArchive() {
+    if (!data) return;
+    setChannelBusy(true);
+    try {
+      const res = await fetch(`/api/channels/${channelId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: !data.archived }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error);
+      await mutate();
+      if (workspaceId) {
+        void globalMutate(`/api/workspaces/${workspaceId}/channels`);
+      }
+    } catch {
+      toast.error("Could not update the channel");
+    } finally {
+      setChannelBusy(false);
+    }
+  }
+
+  async function deleteChannel() {
+    if (!confirm("Delete this channel and all its messages? This can't be undone."))
+      return;
+    setChannelBusy(true);
+    try {
+      const res = await fetch(`/api/channels/${channelId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error);
+      onOpenChange(false);
+      if (workspaceId) {
+        void globalMutate(`/api/workspaces/${workspaceId}/channels`);
+        router.push(`/w/${workspaceId}`);
+      }
+    } catch {
+      toast.error("Could not delete the channel");
+    } finally {
+      setChannelBusy(false);
+    }
+  }
 
   const addable = workspaceMembers
     .filter((m) => !inChannel.has(m.id))
@@ -169,6 +213,35 @@ export function ChannelMembersDialog({
             )}
           </div>
         </div>
+
+        {canManage && (
+          <div className="flex items-center gap-2 border-t pt-3">
+            <button
+              type="button"
+              disabled={channelBusy}
+              onClick={toggleArchive}
+              className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+            >
+              {data?.archived ? (
+                <>
+                  <ArchiveRestore className="size-4" /> Unarchive
+                </>
+              ) : (
+                <>
+                  <Archive className="size-4" /> Archive
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              disabled={channelBusy}
+              onClick={deleteChannel}
+              className="ml-auto flex items-center gap-1.5 rounded-md border border-destructive/40 px-2.5 py-1.5 text-sm text-destructive transition hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
+            >
+              <Trash2 className="size-4" /> Delete channel
+            </button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

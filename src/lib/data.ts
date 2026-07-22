@@ -58,6 +58,27 @@ export async function requireChannelAccess(userId: string, channelId: string) {
   return channel;
 }
 
+/**
+ * A user may *manage* a channel (archive, delete, rename) if they created it or
+ * are a workspace ADMIN. A channel with no creator can only be managed by an
+ * ADMIN. Returns the channel; throws 403 otherwise.
+ */
+export async function requireChannelManager(userId: string, channelId: string) {
+  const channel = await requireChannelAccess(userId, channelId);
+  if (channel.createdById === userId) return channel;
+  const membership = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId: channel.workspaceId, userId } },
+    select: { role: true },
+  });
+  if (membership?.role !== "ADMIN") {
+    throw new ApiError(
+      "Only the channel creator or a workspace admin can do that",
+      403,
+    );
+  }
+  return channel;
+}
+
 export async function requireConversationMember(
   userId: string,
   conversationId: string,
