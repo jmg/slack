@@ -7,6 +7,9 @@ export function mentionHandle(name: string): string {
   return `@${first}`;
 }
 
+/** Tokens that mention a whole channel rather than one person. */
+export const BROADCAST_MENTIONS = ["@channel", "@here", "@everyone"];
+
 /** How long since `lastSeenAt` a user still counts as online. */
 export const PRESENCE_WINDOW_MS = 2 * 60 * 1000;
 

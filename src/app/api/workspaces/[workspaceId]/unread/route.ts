@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handle, requireUser } from "@/lib/api";
 import { requireWorkspaceMember } from "@/lib/data";
-import { mentionHandle } from "@/lib/mentions";
+import { BROADCAST_MENTIONS, mentionHandle } from "@/lib/mentions";
 
 /**
  * Unread + mention counts per channel and DM for the current user. A message is
@@ -45,9 +45,13 @@ export async function GET(
 
     const handleToken = mentionHandle(user.name);
 
+    const contains = (t: string) =>
+      ({ body: { contains: t, mode: "insensitive" as const } });
+
     async function countFor(
       target: { channelId: string } | { conversationId: string },
       after: Date | undefined,
+      broadcast: boolean,
     ) {
       const base = {
         ...target,
@@ -55,14 +59,17 @@ export async function GET(
         userId: { not: user.id },
         ...(after ? { createdAt: { gt: after } } : {}),
       };
+      // In a channel, @channel/@here/@everyone mention every member; in a DM only
+      // the personal handle counts.
+      const mentionMatch = broadcast
+        ? { OR: [contains(handleToken), ...BROADCAST_MENTIONS.map(contains)] }
+        : contains(handleToken);
       const [unread, mentions] = await Promise.all([
         // Unread badge = live top-level messages, matching what the timeline shows.
         prisma.message.count({ where: { ...base, parentId: null } }),
         // Mentions also count thread replies: an @mention inside a thread must
         // still badge the person even though it's not a top-level message.
-        prisma.message.count({
-          where: { ...base, body: { contains: handleToken, mode: "insensitive" } },
-        }),
+        prisma.message.count({ where: { ...base, ...mentionMatch } }),
       ]);
       return { unread, mentions };
     }
@@ -71,13 +78,13 @@ export async function GET(
       Promise.all(
         channels.map(async (c) => ({
           id: c.id,
-          ...(await countFor({ channelId: c.id }, channelRead.get(c.id))),
+          ...(await countFor({ channelId: c.id }, channelRead.get(c.id), true)),
         })),
       ),
       Promise.all(
         conversations.map(async (c) => ({
           id: c.id,
-          ...(await countFor({ conversationId: c.id }, conversationRead.get(c.id))),
+          ...(await countFor({ conversationId: c.id }, conversationRead.get(c.id), false)),
         })),
       ),
     ]);
