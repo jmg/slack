@@ -1,0 +1,20 @@
+name: gitleaks
+
+# Secret-scanning safety net. Added after a live admin session token was found
+# committed in a curl cookie jar (f.txt). Fails the build if a secret is found
+# in the diff or history.
+on:
+  push:
+  pull_request:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the scan sees more than the last commit
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
