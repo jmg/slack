@@ -32,14 +32,35 @@ export async function getSession(): Promise<SessionPayload | null> {
 export async function getCurrentUser() {
   const session = await getSession();
   if (!session) return null;
-  return prisma.user.findUnique({ where: { id: session.userId } });
+  const user = await prisma.user.findUnique({ where: { id: session.userId } });
+  // The token carries the tokenVersion it was issued at; if the user has since
+  // bumped it (logout, password change, forced sign-out) the token is dead.
+  // This is what makes an otherwise-stateless JWT revocable.
+  if (!user || user.tokenVersion !== session.tokenVersion) return null;
+  return user;
 }
 
 /** Issue a session cookie for the given user. */
-export async function createSession(user: { id: string; email: string }) {
-  const token = await signSession({ userId: user.id, email: user.email });
+export async function createSession(user: {
+  id: string;
+  email: string;
+  tokenVersion: number;
+}) {
+  const token = await signSession({
+    userId: user.id,
+    email: user.email,
+    tokenVersion: user.tokenVersion,
+  });
   const store = await cookies();
   store.set(SESSION_COOKIE, token, sessionCookieOptions);
+}
+
+/** Invalidate every outstanding session for a user by advancing tokenVersion. */
+export async function revokeUserSessions(userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { tokenVersion: { increment: 1 } },
+  });
 }
 
 export async function destroySession() {

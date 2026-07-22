@@ -1,10 +1,31 @@
 import { z } from "zod";
 import { MAX_FILES_PER_MESSAGE } from "@/lib/upload-limits";
 
+// A tiny denylist of the most-guessed passwords. Not a substitute for a breach
+// check (HIBP), but blocks the worst offenders (incl. the demo seed password).
+const COMMON_PASSWORDS = new Set([
+  "password",
+  "password1",
+  "password123",
+  "12345678",
+  "123456789",
+  "1234567890",
+  "qwertyuiop",
+  "letmein123",
+  "iloveyou1",
+  "admin1234",
+]);
+
 export const registerSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80),
   email: z.string().trim().toLowerCase().email("Enter a valid email"),
-  password: z.string().min(6, "Password must be at least 6 characters").max(200),
+  password: z
+    .string()
+    .min(10, "Password must be at least 10 characters")
+    .max(200)
+    .refine((p) => !COMMON_PASSWORDS.has(p.toLowerCase()), {
+      message: "That password is too common — choose a stronger one",
+    }),
 });
 
 export const loginSchema = z.object({

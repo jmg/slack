@@ -49,3 +49,4 @@ next-env.d.ts
 /f.txt
 /v.txt
 *.cookies
+AUDIT-2026-07.md

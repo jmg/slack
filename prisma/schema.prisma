@@ -21,6 +21,10 @@ model User {
   name         String
   passwordHash String
   image        String?
+  /// Bumped to invalidate every outstanding session for this user (logout,
+  /// password change, forced sign-out). The signed JWT carries the value it was
+  /// issued at; getCurrentUser rejects the token when they no longer match.
+  tokenVersion Int      @default(0)
   /// Heartbeat from the client; drives the online/offline presence dot.
   lastSeenAt   DateTime?
   createdAt    DateTime @default(now())

@@ -3,9 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { createSession, hashPassword } from "@/lib/auth";
 import { registerSchema } from "@/lib/validators";
 import { apiError, handle } from "@/lib/api";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   return handle(async () => {
+    // Throttle signups per-IP to blunt mass account creation / email probing.
+    const limited = rateLimit(`register:ip:${clientIp(req)}`, 10, 60 * 60 * 1000);
+    if (!limited.allowed) {
+      return NextResponse.json(
+        { error: "Too many attempts. Try again later." },
+        { status: 429, headers: { "Retry-After": String(limited.retryAfter) } },
+      );
+    }
+
     const json = await req.json().catch(() => null);
     const parsed = registerSchema.safeParse(json);
     if (!parsed.success) {

@@ -10,6 +10,15 @@ const NOW = Date.now();
 const minutesAgo = (m: number) => new Date(NOW - m * 60_000);
 
 async function main() {
+  // This seed DROPS all data and creates accounts with a known password. Refuse
+  // to run against production unless explicitly forced.
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_PROD_SEED !== "true") {
+    throw new Error(
+      "Refusing to seed in production (it wipes data and sets a known password). " +
+        "Set ALLOW_PROD_SEED=true to override.",
+    );
+  }
+
   console.log("Clearing existing data…");
   await prisma.workspace.deleteMany();
   await prisma.user.deleteMany();

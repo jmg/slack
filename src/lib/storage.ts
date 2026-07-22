@@ -130,6 +130,14 @@ let cached: StorageDriver | null = null;
 export function getStorage(): StorageDriver {
   if (cached) return cached;
   const endpoint = process.env.S3_ENDPOINT;
+  // Fail closed: the local filesystem driver writes to ephemeral container disk
+  // with no encryption and no persistence. Silently selecting it in production
+  // would lose files and leak plaintext, so require object storage there.
+  if (!endpoint && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "S3_ENDPOINT is required in production — refusing the local .uploads fallback.",
+    );
+  }
   cached = endpoint
     ? createS3Driver(
         endpoint,
