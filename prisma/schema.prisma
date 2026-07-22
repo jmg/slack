@@ -44,6 +44,7 @@ model User {
   readStates          ReadState[]
   attachments         Attachment[]
   createdChannels     Channel[]            @relation("ChannelCreator")
+  createdInvites      Invite[]             @relation("InviteCreator")
 }
 
 model Workspace {
@@ -60,6 +61,7 @@ model Workspace {
   channels      Channel[]
   conversations Conversation[]
   attachments   Attachment[]
+  invites       Invite[]
 }
 
 model WorkspaceMember {
@@ -229,4 +231,21 @@ model Reaction {
 
   @@unique([messageId, userId, emoji])
   @@index([userId])
+}
+
+/// A shareable, expiring invite link to a workspace. Reusable until it expires
+/// or is revoked — anyone who opens the link and signs in joins as a MEMBER.
+model Invite {
+  id          String    @id @default(cuid())
+  workspaceId String
+  token       String    @unique
+  createdById String
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User      @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }

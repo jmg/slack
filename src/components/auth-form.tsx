@@ -19,6 +19,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [password, setPassword] = useState("");
 
   const isRegister = mode === "register";
+  const nextParam = searchParams.get("next");
+  const withNext = (path: string) =>
+    nextParam ? `${path}?next=${encodeURIComponent(nextParam)}` : path;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -97,14 +100,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
         {isRegister ? (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-foreground underline-offset-4 hover:underline">
+            <Link href={withNext("/login")} className="font-medium text-foreground underline-offset-4 hover:underline">
               Sign in
             </Link>
           </>
         ) : (
           <>
             New to Slack?{" "}
-            <Link href="/register" className="font-medium text-foreground underline-offset-4 hover:underline">
+            <Link href={withNext("/register")} className="font-medium text-foreground underline-offset-4 hover:underline">
               Create an account
             </Link>
           </>

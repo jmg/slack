@@ -14,6 +14,7 @@ import {
   MessageSquarePlus,
   Search,
   Settings,
+  UserPlus,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,6 +28,7 @@ import { UserAvatar } from "@/components/user-avatar";
 import { CreateChannelDialog } from "@/components/create-channel-dialog";
 import { NewDmDialog } from "@/components/new-dm-dialog";
 import { SearchDialog } from "@/components/search-dialog";
+import { InviteDialog } from "@/components/invite-dialog";
 import { cn } from "@/lib/utils";
 import type {
   CurrentUser,
@@ -54,6 +56,7 @@ export function WorkspaceSidebar({
   const [channelDialog, setChannelDialog] = useState(false);
   const [dmDialog, setDmDialog] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   // Live, event-driven copies of everything in the rail. The workspace SSE
   // stream (useWorkspaceEvents, mounted in the layout) revalidates these keys as
@@ -84,6 +87,7 @@ export function WorkspaceSidebar({
     (unread?.conversations ?? []).map((c) => [c.id, c]),
   );
   const presenceOf = new Map(liveMembers.map((m) => [m.id, m.online === true]));
+  const isAdmin = liveMembers.some((m) => m.isMe && m.role === "ADMIN");
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -119,6 +123,11 @@ export function WorkspaceSidebar({
             </span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          {isAdmin && (
+            <DropdownMenuItem onClick={() => setInviteOpen(true)}>
+              <UserPlus className="size-4" /> Invite people
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             render={
               <Link href={`/w/${workspace.id}/settings`}>
@@ -273,6 +282,11 @@ export function WorkspaceSidebar({
         workspaceId={workspace.id}
         open={searchOpen}
         onOpenChange={setSearchOpen}
+      />
+      <InviteDialog
+        workspaceId={workspace.id}
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
       />
     </aside>
   );
