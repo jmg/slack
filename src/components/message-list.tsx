@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import { MessageItem } from "@/components/message-item";
 import { dayKey, formatDayDivider } from "@/lib/format";
 import type { SerializedMessage } from "@/lib/messages";
@@ -26,10 +27,24 @@ export function MessageList({
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const count = messages.length;
+  const targetId = useSearchParams().get("msg");
+  const jumpedTo = useRef<string | null>(null);
 
   useEffect(() => {
+    // Deep-link (?msg=…): jump to and briefly flash the target once it's in the
+    // list. Otherwise (or if it's beyond the loaded window) fall back to bottom.
+    if (targetId && jumpedTo.current !== targetId) {
+      const el = document.getElementById(`msg-${targetId}`);
+      if (el) {
+        jumpedTo.current = targetId;
+        el.scrollIntoView({ block: "center" });
+        el.classList.add("permalink-flash");
+        const t = setTimeout(() => el.classList.remove("permalink-flash"), 2000);
+        return () => clearTimeout(t);
+      }
+    }
     bottomRef.current?.scrollIntoView();
-  }, [count]);
+  }, [count, targetId]);
 
   const rows: ReactNode[] = [];
   let lastDay = "";

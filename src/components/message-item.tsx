@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   SmilePlus,
   MessageSquareText,
   MoreVertical,
+  Link2,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -67,10 +69,21 @@ export function MessageItem({
     }
   }
 
+  async function copyLink() {
+    const url = `${window.location.origin}${window.location.pathname}?msg=${message.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Could not copy link");
+    }
+  }
+
   return (
     <div
+      id={`msg-${message.id}`}
       className={cn(
-        "group relative flex gap-2 px-4 hover:bg-muted/40",
+        "group relative flex scroll-mt-16 gap-2 px-4 transition-colors hover:bg-muted/40",
         showHeader ? "mt-2 pt-1.5" : "py-0.5",
       )}
     >
@@ -225,6 +238,18 @@ export function MessageItem({
               className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
               <MessageSquareText className="size-4" />
+            </button>
+          )}
+
+          {!hideThreadIndicator && (
+            <button
+              type="button"
+              onClick={copyLink}
+              aria-label="Copy link to message"
+              title="Copy link"
+              className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
+              <Link2 className="size-4" />
             </button>
           )}
 

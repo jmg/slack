@@ -128,3 +128,15 @@
     @apply font-sans;
   }
 }
+/* Deep-link (?msg=…) target highlight — brief flash on jump-to-message. */
+@keyframes permalink-flash {
+  0% {
+    background-color: color-mix(in srgb, var(--color-primary, #1d78a3) 20%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.permalink-flash {
+  animation: permalink-flash 2s ease-out;
+}

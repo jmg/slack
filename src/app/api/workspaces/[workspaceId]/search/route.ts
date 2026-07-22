@@ -69,7 +69,7 @@ export async function GET(
           context: {
             type: "channel" as const,
             name: `#${ch.name}`,
-            href: `/w/${workspaceId}/c/${ch.id}`,
+            href: `/w/${workspaceId}/c/${ch.id}?msg=${m.id}`,
             isPrivate: ch.isPrivate,
           },
         };
@@ -87,7 +87,7 @@ export async function GET(
         context: {
           type: "dm" as const,
           name: display.map((u) => u.name).join(", "),
-          href: `/w/${workspaceId}/d/${conv.id}`,
+          href: `/w/${workspaceId}/d/${conv.id}?msg=${m.id}`,
           isPrivate: true,
         },
       };
