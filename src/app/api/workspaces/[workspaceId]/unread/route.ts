@@ -45,18 +45,23 @@ export async function GET(
 
     const handleToken = mentionHandle(user.name);
 
-    const baseWhere = (after: Date | undefined) => ({
-      parentId: null,
-      deletedAt: null,
-      userId: { not: user.id },
-      ...(after ? { createdAt: { gt: after } } : {}),
-    });
-
-    async function countFor(where: Record<string, unknown>) {
+    async function countFor(
+      target: { channelId: string } | { conversationId: string },
+      after: Date | undefined,
+    ) {
+      const base = {
+        ...target,
+        deletedAt: null,
+        userId: { not: user.id },
+        ...(after ? { createdAt: { gt: after } } : {}),
+      };
       const [unread, mentions] = await Promise.all([
-        prisma.message.count({ where }),
+        // Unread badge = live top-level messages, matching what the timeline shows.
+        prisma.message.count({ where: { ...base, parentId: null } }),
+        // Mentions also count thread replies: an @mention inside a thread must
+        // still badge the person even though it's not a top-level message.
         prisma.message.count({
-          where: { ...where, body: { contains: handleToken, mode: "insensitive" } },
+          where: { ...base, body: { contains: handleToken, mode: "insensitive" } },
         }),
       ]);
       return { unread, mentions };
@@ -66,16 +71,13 @@ export async function GET(
       Promise.all(
         channels.map(async (c) => ({
           id: c.id,
-          ...(await countFor({ channelId: c.id, ...baseWhere(channelRead.get(c.id)) })),
+          ...(await countFor({ channelId: c.id }, channelRead.get(c.id))),
         })),
       ),
       Promise.all(
         conversations.map(async (c) => ({
           id: c.id,
-          ...(await countFor({
-            conversationId: c.id,
-            ...baseWhere(conversationRead.get(c.id)),
-          })),
+          ...(await countFor({ conversationId: c.id }, conversationRead.get(c.id))),
         })),
       ),
     ]);

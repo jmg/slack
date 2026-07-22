@@ -5,6 +5,7 @@ import { WorkspaceRail } from "@/components/workspace-rail";
 import { WorkspaceSidebar } from "@/components/workspace-sidebar";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { WorkspaceRealtime } from "@/components/workspace-realtime";
+import { WorkspaceNotifications } from "@/components/workspace-notifications";
 import { isOnline } from "@/lib/mentions";
 
 export default async function WorkspaceLayout({
@@ -90,6 +91,10 @@ export default async function WorkspaceLayout({
     <div className="flex h-screen w-full overflow-hidden">
       <PresenceHeartbeat workspaceId={workspaceId} />
       <WorkspaceRealtime workspaceId={workspaceId} />
+      <WorkspaceNotifications
+        workspaceId={workspaceId}
+        workspaceName={membership.workspace.name}
+      />
       <WorkspaceRail workspaces={workspaces} activeId={workspaceId} />
       <WorkspaceSidebar
         workspace={membership.workspace}
