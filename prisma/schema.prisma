@@ -292,3 +292,15 @@ model AuditLog {
   @@index([workspaceId, createdAt])
   @@index([actorId, createdAt])
 }
+
+/// Cache of Open-Graph link previews (unfurls). Keyed by the URL itself. `ok`
+/// records a failed/blocked fetch so we don't keep retrying a bad URL.
+model LinkPreview {
+  url         String   @id
+  ok          Boolean  @default(true)
+  title       String?
+  description String?
+  imageUrl    String?
+  siteName    String?
+  fetchedAt   DateTime @default(now())
+}

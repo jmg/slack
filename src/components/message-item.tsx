@@ -14,6 +14,7 @@ import {
 import { UserAvatar } from "@/components/user-avatar";
 import { MessageBody } from "@/components/message-body";
 import { AttachmentList } from "@/components/attachment-list";
+import { LinkPreviewCard } from "@/components/link-preview-card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +32,14 @@ import { cn } from "@/lib/utils";
 import type { SerializedMessage } from "@/lib/messages";
 
 const EMOJIS = ["👍", "❤️", "😂", "🎉", "👀", "🙌", "✅", "🔥"];
+
+const URL_RE = /https?:\/\/[^\s]+/g;
+/** URLs in the body to unfurl — trailing punctuation stripped, deduped, capped. */
+function extractUrls(body: string): string[] {
+  const found = body.match(URL_RE) ?? [];
+  const cleaned = found.map((u) => u.replace(/[.,;:!?)\]]+$/, ""));
+  return [...new Set(cleaned)].slice(0, 2);
+}
 
 export function MessageItem({
   message,
@@ -158,6 +167,9 @@ export function MessageItem({
               </div>
             )}
             <AttachmentList attachments={message.attachments} />
+            {extractUrls(message.body).map((u) => (
+              <LinkPreviewCard key={u} url={u} />
+            ))}
           </>
         )}
 
