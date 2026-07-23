@@ -25,6 +25,8 @@ export default async function SettingsPage({
       isAdmin={membership.role === "ADMIN"}
       emailNotifications={user.emailNotifications}
       chatTheme={user.chatTheme}
+      userName={user.name}
+      userImage={user.image}
     />
   );
 }

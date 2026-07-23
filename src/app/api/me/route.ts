@@ -8,14 +8,28 @@ import { assertSameOrigin } from "@/lib/csrf";
 import { recordAudit } from "@/lib/audit";
 import { isChatTheme } from "@/lib/themes";
 
+// Avatars are stored inline as a small (client-resized) data URL — no object
+// storage or public proxy needed, and every member payload already carries it.
+const avatarImage = z
+  .string()
+  .refine(
+    (v) => /^data:image\/(png|jpe?g|webp);base64,/.test(v) && v.length <= 400_000,
+    "Invalid image",
+  );
+
 const updateSchema = z
   .object({
     emailNotifications: z.boolean().optional(),
     chatTheme: z.string().refine(isChatTheme, "Unknown theme").optional(),
+    image: z.union([avatarImage, z.null()]).optional(),
   })
-  .refine((d) => d.emailNotifications !== undefined || d.chatTheme !== undefined, {
-    message: "Nothing to update",
-  });
+  .refine(
+    (d) =>
+      d.emailNotifications !== undefined ||
+      d.chatTheme !== undefined ||
+      d.image !== undefined,
+    { message: "Nothing to update" },
+  );
 
 /** Current user's own settings. */
 export async function GET() {
@@ -38,11 +52,12 @@ export async function PATCH(req: NextRequest) {
     if (!parsed.success) {
       return apiError(parsed.error.issues[0]?.message ?? "Invalid input");
     }
-    const { emailNotifications, chatTheme } = parsed.data;
+    const { emailNotifications, chatTheme, image } = parsed.data;
 
     await prisma.user.update({
       where: { id: user.id },
       data: {
+        ...(image !== undefined ? { image } : {}),
         ...(chatTheme !== undefined ? { chatTheme } : {}),
         ...(emailNotifications !== undefined
           ? {

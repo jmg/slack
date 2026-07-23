@@ -155,6 +155,7 @@ export function ThreadPanel({
         placeholder="Reply…"
         onSend={sendReply}
         workspaceId={workspaceId}
+        draftKey={`thread:${messageId}`}
       />
     </aside>
   );

@@ -15,6 +15,7 @@ export function MessageList({
   onEdit,
   onDelete,
   onOpenThread,
+  onMarkUnread,
   emptyState,
 }: {
   messages: SerializedMessage[];
@@ -23,6 +24,7 @@ export function MessageList({
   onEdit?: (messageId: string, body: string) => Promise<void>;
   onDelete?: (messageId: string) => void;
   onOpenThread?: (message: SerializedMessage) => void;
+  onMarkUnread?: (message: SerializedMessage) => void;
   emptyState?: ReactNode;
 }) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -81,6 +83,7 @@ export function MessageList({
         onEdit={onEdit}
         onDelete={onDelete}
         onOpenThread={onOpenThread}
+        onMarkUnread={onMarkUnread}
       />,
     );
 

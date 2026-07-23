@@ -37,13 +37,33 @@ export function MessageComposer({
   onSend,
   workspaceId,
   autoFocus,
+  draftKey,
 }: {
   placeholder: string;
   onSend: (body: string, attachmentIds: string[]) => Promise<void>;
   workspaceId?: string;
   autoFocus?: boolean;
+  /** When set, unsent text is persisted here so it survives navigation. */
+  draftKey?: string;
 }) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(() => {
+    if (typeof window === "undefined" || !draftKey) return "";
+    try {
+      return localStorage.getItem(`draft:${draftKey}`) ?? "";
+    } catch {
+      return "";
+    }
+  });
+
+  const saveDraft = (v: string) => {
+    if (!draftKey || typeof window === "undefined") return;
+    try {
+      if (v.trim()) localStorage.setItem(`draft:${draftKey}`, v);
+      else localStorage.removeItem(`draft:${draftKey}`);
+    } catch {
+      // ignore storage failures (private mode, quota)
+    }
+  };
   const [sending, setSending] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
@@ -93,6 +113,7 @@ export function MessageComposer({
     const start = m.index + m[1].length;
     const next = `${value.slice(0, start)}${token} ${value.slice(caret)}`;
     setValue(next);
+    saveDraft(next);
     setMentionQuery(null);
     requestAnimationFrame(() => {
       el?.focus();
@@ -145,6 +166,7 @@ export function MessageComposer({
         pending.map((a) => a.id),
       );
       setValue("");
+      saveDraft("");
       setPending([]);
       requestAnimationFrame(resize);
     } finally {
@@ -282,6 +304,7 @@ export function MessageComposer({
               autoFocus={autoFocus}
               onChange={(e) => {
                 setValue(e.target.value);
+                saveDraft(e.target.value);
                 resize();
                 detectMention(e.target.value, e.target.selectionStart ?? 0);
               }}

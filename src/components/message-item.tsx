@@ -7,6 +7,7 @@ import {
   MessageSquareText,
   MoreVertical,
   Link2,
+  Circle,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -39,6 +40,7 @@ export function MessageItem({
   onEdit,
   onDelete,
   onOpenThread,
+  onMarkUnread,
   hideThreadIndicator,
 }: {
   message: SerializedMessage;
@@ -48,6 +50,7 @@ export function MessageItem({
   onEdit?: (messageId: string, body: string) => Promise<void>;
   onDelete?: (messageId: string) => void;
   onOpenThread?: (message: SerializedMessage) => void;
+  onMarkUnread?: (message: SerializedMessage) => void;
   hideThreadIndicator?: boolean;
 }) {
   const time = formatMessageTime(message.createdAt);
@@ -241,19 +244,7 @@ export function MessageItem({
             </button>
           )}
 
-          {!hideThreadIndicator && (
-            <button
-              type="button"
-              onClick={copyLink}
-              aria-label="Copy link to message"
-              title="Copy link"
-              className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            >
-              <Link2 className="size-4" />
-            </button>
-          )}
-
-          {isMine && (onEdit || onDelete) && (
+          {(!hideThreadIndicator || (isMine && (onEdit || onDelete))) && (
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
@@ -262,7 +253,17 @@ export function MessageItem({
                 <MoreVertical className="size-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {onEdit && (
+                {!hideThreadIndicator && (
+                  <DropdownMenuItem onClick={copyLink}>
+                    <Link2 className="size-4" /> Copy link
+                  </DropdownMenuItem>
+                )}
+                {onMarkUnread && !hideThreadIndicator && (
+                  <DropdownMenuItem onClick={() => onMarkUnread(message)}>
+                    <Circle className="size-4" /> Mark unread
+                  </DropdownMenuItem>
+                )}
+                {isMine && onEdit && (
                   <DropdownMenuItem
                     onClick={() => {
                       setDraft(message.body);
@@ -272,7 +273,7 @@ export function MessageItem({
                     <Pencil className="size-4" /> Edit message
                   </DropdownMenuItem>
                 )}
-                {onDelete && (
+                {isMine && onDelete && (
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() => onDelete(message.id)}

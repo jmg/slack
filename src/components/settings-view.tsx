@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -9,8 +9,26 @@ import { ArrowLeft, Check, Mail, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { UserAvatar } from "@/components/user-avatar";
 import { cn } from "@/lib/utils";
 import { CHAT_THEMES } from "@/lib/themes";
+
+/** Read an image file and re-encode it as a small square avatar data URL. */
+async function resizeToAvatar(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+  const scale = Math.max(size / bitmap.width, size / bitmap.height);
+  const w = bitmap.width * scale;
+  const h = bitmap.height * scale;
+  ctx.drawImage(bitmap, (size - w) / 2, (size - h) / 2, w, h);
+  bitmap.close();
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
 
 export function SettingsView({
   workspaceId,
@@ -18,14 +36,49 @@ export function SettingsView({
   isAdmin,
   emailNotifications,
   chatTheme,
+  userName,
+  userImage,
 }: {
   workspaceId: string;
   workspaceName: string;
   isAdmin: boolean;
   emailNotifications: boolean;
   chatTheme: string;
+  userName: string;
+  userImage: string | null;
 }) {
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [image, setImage] = useState<string | null>(userImage);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+
+  async function saveImage(next: string | null) {
+    setAvatarBusy(true);
+    try {
+      const res = await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: next }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error);
+      setImage(next);
+      router.refresh(); // update the avatar shown in the sidebar/messages
+      toast.success(next ? "Photo updated" : "Photo removed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update photo");
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  async function onAvatarFile(file: File) {
+    try {
+      const dataUrl = await resizeToAvatar(file);
+      await saveImage(dataUrl);
+    } catch {
+      toast.error("Could not read that image");
+    }
+  }
   const [name, setName] = useState(workspaceName);
   const [savingName, setSavingName] = useState(false);
   const [emailOn, setEmailOn] = useState(emailNotifications);
@@ -118,8 +171,55 @@ export function SettingsView({
         </Link>
         <h1 className="text-2xl font-bold">Settings</h1>
 
-        {/* Workspace */}
+        {/* Profile photo */}
         <section className="mt-8 rounded-lg border p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Profile photo
+          </h2>
+          <div className="mt-4 flex items-center gap-4">
+            <UserAvatar name={userName} image={image} className="size-16 rounded-lg" />
+            <div className="flex flex-col gap-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void onAvatarFile(f);
+                  e.target.value = "";
+                }}
+              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={avatarBusy}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  {avatarBusy ? "Saving…" : "Upload photo"}
+                </Button>
+                {image && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={avatarBusy}
+                    onClick={() => saveImage(null)}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                PNG, JPG or WebP — resized to 128×128.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Workspace */}
+        <section className="mt-6 rounded-lg border p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Workspace
           </h2>

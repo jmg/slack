@@ -124,6 +124,23 @@ export function ChatView({
     });
   }
 
+  async function markUnread(message: SerializedMessage) {
+    // Move the read cursor to just before this message so everything from here
+    // on counts as unread once you leave the channel.
+    const at = new Date(new Date(message.createdAt).getTime() - 1).toISOString();
+    try {
+      await fetch(readUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ at }),
+      });
+      if (workspaceId) void globalMutate(`/api/workspaces/${workspaceId}/unread`);
+      toast.success("Marked as unread");
+    } catch {
+      toast.error("Could not mark as unread");
+    }
+  }
+
   return (
     <div className="flex h-full">
       <div className="flex min-w-0 flex-1 flex-col">
@@ -162,6 +179,7 @@ export function ChatView({
           onEdit={editMessage}
           onDelete={deleteMessage}
           onOpenThread={(m) => setThreadId(m.id)}
+          onMarkUnread={markUnread}
           emptyState={
             <div className="px-4 pb-6">
               <div className="flex items-center gap-2 text-2xl font-bold">
@@ -191,6 +209,7 @@ export function ChatView({
           placeholder={placeholder}
           onSend={sendMessage}
           workspaceId={workspaceId}
+          draftKey={messagesUrl}
         />
       </div>
 
