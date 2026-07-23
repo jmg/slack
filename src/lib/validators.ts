@@ -72,9 +72,16 @@ export const reactionSchema = z.object({
   emoji: z.string().min(1).max(16),
 });
 
-export const createConversationSchema = z.object({
-  userId: z.string().min(1),
-});
+// Accepts a single userId (1:1, kept for existing callers) or a list of userIds
+// (group DM). At least one person is required.
+export const createConversationSchema = z
+  .object({
+    userId: z.string().min(1).optional(),
+    userIds: z.array(z.string().min(1)).max(8).optional(),
+  })
+  .refine((d) => !!d.userId || (d.userIds?.length ?? 0) > 0, {
+    message: "Pick at least one person",
+  });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

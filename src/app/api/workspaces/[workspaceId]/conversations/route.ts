@@ -55,17 +55,22 @@ export async function POST(
     if (!parsed.success) {
       return apiError(parsed.error.issues[0]?.message ?? "Invalid input");
     }
-    const targetId = parsed.data.userId;
 
-    const targetMember = await prisma.workspaceMember.findUnique({
-      where: { workspaceId_userId: { workspaceId, userId: targetId } },
+    const targets = [
+      ...new Set(parsed.data.userIds ?? (parsed.data.userId ? [parsed.data.userId] : [])),
+    ];
+
+    // Every target must belong to this workspace.
+    const memberships = await prisma.workspaceMember.findMany({
+      where: { workspaceId, userId: { in: targets } },
+      select: { userId: true },
     });
-    if (!targetMember) {
-      return apiError("That person is not in this workspace", 404);
+    if (memberships.length !== targets.length) {
+      return apiError("Someone you picked isn't in this workspace", 404);
     }
 
-    const userIds =
-      targetId === user.id ? [user.id] : [user.id, targetId];
+    // Full member set: me + the targets (a self-DM is just [me]).
+    const userIds = [...new Set([user.id, ...targets])];
 
     // Look for an existing conversation with exactly this set of members.
     const mine = await prisma.conversation.findMany({
