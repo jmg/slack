@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Mail } from "lucide-react";
+import { ArrowLeft, Check, Mail, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,26 @@ export function SettingsView({
   const [emailOn, setEmailOn] = useState(emailNotifications);
   const [savingEmail, setSavingEmail] = useState(false);
   const [theme, setTheme] = useState(chatTheme);
+  const [deleting, setDeleting] = useState(false);
+
+  async function deleteAccount() {
+    if (
+      !confirm(
+        "Delete your account? Your profile is scrubbed and you're removed from all workspaces. This can't be undone.",
+      )
+    )
+      return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/me", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      router.push("/login");
+      router.refresh();
+    } catch {
+      toast.error("Could not delete your account");
+      setDeleting(false);
+    }
+  }
 
   async function pickTheme(key: string) {
     const previous = theme;
@@ -187,7 +208,66 @@ export function SettingsView({
             </span>
           </label>
         </section>
+
+        {isAdmin && <AuditSection workspaceId={workspaceId} />}
+
+        {/* Danger zone */}
+        <section className="mt-6 rounded-lg border border-destructive/30 p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-destructive">
+            Danger zone
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Deleting your account scrubs your profile and removes you from all
+            workspaces. Your messages remain, shown as &ldquo;Deleted
+            user&rdquo;. This can&apos;t be undone.
+          </p>
+          <button
+            type="button"
+            onClick={deleteAccount}
+            disabled={deleting}
+            className="mt-4 rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+          >
+            {deleting ? "Deleting…" : "Delete my account"}
+          </button>
+        </section>
       </div>
     </div>
+  );
+}
+
+type AuditEntry = {
+  id: string;
+  action: string;
+  actor: string;
+  createdAt: string;
+};
+
+function AuditSection({ workspaceId }: { workspaceId: string }) {
+  const { data } = useSWR<AuditEntry[]>(`/api/workspaces/${workspaceId}/audit`);
+  return (
+    <section className="mt-6 rounded-lg border p-5">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <ScrollText className="size-4" /> Audit log
+      </h2>
+      <div className="mt-3">
+        {(!data || data.length === 0) && (
+          <p className="text-sm text-muted-foreground">No recorded activity yet.</p>
+        )}
+        {data?.map((e) => (
+          <div
+            key={e.id}
+            className="flex items-center gap-3 border-b py-1.5 text-sm last:border-0"
+          >
+            <span className="font-mono text-xs">{e.action}</span>
+            <span className="min-w-0 flex-1 truncate text-muted-foreground">
+              {e.actor}
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {new Date(e.createdAt).toLocaleString()}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

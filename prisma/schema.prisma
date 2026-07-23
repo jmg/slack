@@ -32,6 +32,10 @@ model User {
   lastNotifiedAt DateTime?
   /// Sidebar color theme key (see src/lib/themes.ts).
   chatTheme    String   @default("aubergine")
+  /// Set when the account is deleted: PII is scrubbed and the user can no longer
+  /// authenticate (getCurrentUser rejects them). Messages stay, authored by a
+  /// "Deleted user" placeholder, so others' threads survive.
+  deactivatedAt DateTime?
   /// Heartbeat from the client; drives the online/offline presence dot.
   lastSeenAt   DateTime?
   createdAt    DateTime @default(now())

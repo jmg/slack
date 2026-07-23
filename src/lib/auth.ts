@@ -35,8 +35,11 @@ export async function getCurrentUser() {
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   // The token carries the tokenVersion it was issued at; if the user has since
   // bumped it (logout, password change, forced sign-out) the token is dead.
-  // This is what makes an otherwise-stateless JWT revocable.
-  if (!user || user.tokenVersion !== session.tokenVersion) return null;
+  // This is what makes an otherwise-stateless JWT revocable. A deactivated
+  // (deleted) account can never authenticate again.
+  if (!user || user.deactivatedAt || user.tokenVersion !== session.tokenVersion) {
+    return null;
+  }
   return user;
 }
 

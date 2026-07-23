@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
+import { destroySession, hashPassword } from "@/lib/auth";
+import { assertSameOrigin } from "@/lib/csrf";
+import { recordAudit } from "@/lib/audit";
 import { isChatTheme } from "@/lib/themes";
 
 const updateSchema = z
@@ -50,6 +54,45 @@ export async function PATCH(req: NextRequest) {
           : {}),
       },
     });
+    return NextResponse.json({ ok: true });
+  });
+}
+
+/**
+ * Delete (GDPR-erase) the current account. Rather than a hard delete — which
+ * would cascade away this user's messages and break threads other people are in
+ * — we scrub the PII, drop all memberships, and mark the account deactivated so
+ * it can never sign in again. Messages remain, attributed to a "Deleted user".
+ */
+export async function DELETE(req: NextRequest) {
+  return handle(async () => {
+    assertSameOrigin(req);
+    const user = await requireUser();
+
+    const scrubbedHash = await hashPassword(randomBytes(32).toString("hex"));
+
+    await prisma.$transaction([
+      prisma.workspaceMember.deleteMany({ where: { userId: user.id } }),
+      prisma.channelMember.deleteMany({ where: { userId: user.id } }),
+      prisma.conversationMember.deleteMany({ where: { userId: user.id } }),
+      prisma.star.deleteMany({ where: { userId: user.id } }),
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name: "Deleted user",
+          email: `deleted-${user.id}@deleted.invalid`,
+          passwordHash: scrubbedHash,
+          image: null,
+          emailNotifications: false,
+          deactivatedAt: new Date(),
+          // Kill every outstanding session for this user.
+          tokenVersion: { increment: 1 },
+        },
+      }),
+    ]);
+
+    recordAudit({ action: "account.delete", actorId: user.id });
+    await destroySession();
     return NextResponse.json({ ok: true });
   });
 }
