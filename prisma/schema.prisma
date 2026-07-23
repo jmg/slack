@@ -47,6 +47,7 @@ model User {
   attachments         Attachment[]
   createdChannels     Channel[]            @relation("ChannelCreator")
   createdInvites      Invite[]             @relation("InviteCreator")
+  stars               Star[]
 }
 
 model Workspace {
@@ -100,6 +101,7 @@ model Channel {
   members    ChannelMember[]
   messages   Message[]
   readStates ReadState[]
+  stars      Star[]
 
   @@unique([workspaceId, name])
   @@index([createdById])
@@ -128,6 +130,7 @@ model Conversation {
   members    ConversationMember[]
   messages   Message[]
   readStates ReadState[]
+  stars      Star[]
 }
 
 model ConversationMember {
@@ -250,4 +253,21 @@ model Invite {
   createdBy User      @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
+}
+
+/// A user's starred (favourited) channel or DM — surfaced in a "Starred" section.
+model Star {
+  id             String   @id @default(cuid())
+  userId         String
+  channelId      String?
+  conversationId String?
+  createdAt      DateTime @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel      Channel?      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId])
+  @@unique([userId, conversationId])
+  @@index([userId])
 }

@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import useSWR from "swr";
+import { toast } from "sonner";
 import {
   Archive,
   ChevronDown,
+  ChevronRight,
   Hash,
   Lock,
   LogOut,
@@ -14,6 +16,7 @@ import {
   MessageSquarePlus,
   Search,
   Settings,
+  Star,
   UserPlus,
 } from "lucide-react";
 import {
@@ -39,7 +42,8 @@ import type {
   UnreadCounts,
 } from "@/lib/types";
 import type { ChatTheme } from "@/lib/themes";
-import type { CSSProperties } from "react";
+
+type Stars = { channelIds: string[]; conversationIds: string[] };
 
 export function WorkspaceSidebar({
   workspace,
@@ -63,12 +67,13 @@ export function WorkspaceSidebar({
   const [searchOpen, setSearchOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  // Which sections are collapsed (in-memory; persists across client nav).
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const toggleSection = (label: string) =>
+    setCollapsed((c) => ({ ...c, [label]: !c[label] }));
 
-  // Live, event-driven copies of everything in the rail. The workspace SSE
-  // stream (useWorkspaceEvents, mounted in the layout) revalidates these keys as
-  // channels, DMs, members and unread counts change — no reload, no fast poll.
-  // The one remaining interval is a slow fallback so a user going *offline*
-  // (a time-based transition nobody emits an event for) is still reflected.
+  // Live, event-driven copies of everything in the rail (revalidated by the SSE
+  // hook in the layout). The one interval is a slow fallback for offline detection.
   const { data: unread } = useSWR<UnreadCounts>(
     `/api/workspaces/${workspace.id}/unread`,
   );
@@ -85,15 +90,48 @@ export function WorkspaceSidebar({
     `/api/workspaces/${workspace.id}/members`,
     { fallbackData: members, refreshInterval: 60000 },
   );
-
-  const unreadForChannel = new Map(
-    (unread?.channels ?? []).map((c) => [c.id, c]),
+  const { data: stars, mutate: mutateStars } = useSWR<Stars>(
+    `/api/workspaces/${workspace.id}/stars`,
   );
+
+  const unreadForChannel = new Map((unread?.channels ?? []).map((c) => [c.id, c]));
   const unreadForConversation = new Map(
     (unread?.conversations ?? []).map((c) => [c.id, c]),
   );
   const presenceOf = new Map(liveMembers.map((m) => [m.id, m.online === true]));
   const isAdmin = liveMembers.some((m) => m.isMe && m.role === "ADMIN");
+
+  const starredChannels = new Set(stars?.channelIds ?? []);
+  const starredConvs = new Set(stars?.conversationIds ?? []);
+
+  async function toggleStar(target: { channelId?: string; conversationId?: string }) {
+    const isChan = !!target.channelId;
+    const id = (target.channelId ?? target.conversationId)!;
+    const currently = isChan ? starredChannels.has(id) : starredConvs.has(id);
+    void mutateStars(
+      (cur) => {
+        const chans = new Set(cur?.channelIds ?? []);
+        const convs = new Set(cur?.conversationIds ?? []);
+        const set = isChan ? chans : convs;
+        if (currently) set.delete(id);
+        else set.add(id);
+        return { channelIds: [...chans], conversationIds: [...convs] };
+      },
+      { revalidate: false },
+    );
+    try {
+      const res = await fetch("/api/stars", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(target),
+      });
+      if (!res.ok) throw new Error();
+      void mutateStars();
+    } catch {
+      void mutateStars();
+      toast.error("Could not update star");
+    }
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -111,6 +149,86 @@ export function WorkspaceSidebar({
     router.push("/login");
     router.refresh();
   }
+
+  const rowBase =
+    "flex items-center gap-2 rounded-md py-1 pl-2 pr-7 text-[15px] transition";
+  const rowTone = (active: boolean, hasUnread: boolean) =>
+    active
+      ? "bg-[var(--ws-active)] text-white"
+      : hasUnread
+        ? "font-bold text-white hover:bg-white/10"
+        : "text-white/80 hover:bg-white/10";
+
+  function channelRow(channel: SidebarChannel) {
+    const href = `/w/${workspace.id}/c/${channel.id}`;
+    const active = pathname === href;
+    const counts = active ? undefined : unreadForChannel.get(channel.id);
+    const hasUnread = (counts?.unread ?? 0) > 0;
+    return (
+      <li key={`c-${channel.id}`} className="group/row relative">
+        <Link
+          href={href}
+          title={channel.archived ? "Archived channel" : undefined}
+          className={cn(
+            rowBase,
+            rowTone(active, hasUnread),
+            channel.archived && !active && "opacity-50",
+          )}
+        >
+          {channel.archived ? (
+            <Archive className="size-3.5 shrink-0" />
+          ) : channel.isPrivate ? (
+            <Lock className="size-3.5 shrink-0" />
+          ) : (
+            <Hash className="size-3.5 shrink-0" />
+          )}
+          <span className="truncate">{channel.name}</span>
+          <UnreadBadge unread={counts?.unread ?? 0} mentions={counts?.mentions ?? 0} />
+        </Link>
+        <StarToggle
+          starred={starredChannels.has(channel.id)}
+          onToggle={() => toggleStar({ channelId: channel.id })}
+        />
+      </li>
+    );
+  }
+
+  function convRow(conv: SidebarConversation) {
+    const href = `/w/${workspace.id}/d/${conv.id}`;
+    const active = pathname === href;
+    const other = conv.users[0];
+    const counts = active ? undefined : unreadForConversation.get(conv.id);
+    const hasUnread = (counts?.unread ?? 0) > 0;
+    return (
+      <li key={`d-${conv.id}`} className="group/row relative">
+        <Link href={href} className={cn(rowBase, rowTone(active, hasUnread))}>
+          {other && (
+            <UserAvatar
+              name={other.name}
+              image={other.image}
+              className="size-5 rounded"
+              online={presenceOf.get(other.id) ?? false}
+            />
+          )}
+          <span className="truncate">
+            {conv.name}
+            {conv.isSelf && <span className="ml-1 text-xs text-white/50">you</span>}
+          </span>
+          <UnreadBadge unread={counts?.unread ?? 0} mentions={counts?.mentions ?? 0} />
+        </Link>
+        <StarToggle
+          starred={starredConvs.has(conv.id)}
+          onToggle={() => toggleStar({ conversationId: conv.id })}
+        />
+      </li>
+    );
+  }
+
+  const starredChannelList = liveChannels.filter((c) => starredChannels.has(c.id));
+  const starredConvList = liveConversations.filter((c) => starredConvs.has(c.id));
+  const hasStarred = starredChannelList.length + starredConvList.length > 0;
+  const regularChannels = liveChannels.filter((c) => !starredChannels.has(c.id));
+  const regularConvs = liveConversations.filter((c) => !starredConvs.has(c.id));
 
   return (
     <aside
@@ -179,109 +297,53 @@ export function WorkspaceSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-3">
+        {hasStarred && (
+          <div className="mb-4">
+            <SectionHeader
+              label="Starred"
+              collapsed={collapsed.Starred}
+              onToggle={() => toggleSection("Starred")}
+            />
+            {!collapsed.Starred && (
+              <ul className="mt-1 space-y-0.5">
+                {starredChannelList.map(channelRow)}
+                {starredConvList.map(convRow)}
+              </ul>
+            )}
+          </div>
+        )}
+
         {/* Channels */}
         <SectionHeader
           label="Channels"
+          collapsed={collapsed.Channels}
+          onToggle={() => toggleSection("Channels")}
           onAdd={() => setChannelDialog(true)}
           addLabel="Create channel"
         />
-        <ul className="mb-4 mt-1 space-y-0.5">
-          {liveChannels.map((channel) => {
-            const href = `/w/${workspace.id}/c/${channel.id}`;
-            const active = pathname === href;
-            // While you're viewing a channel it's being marked read anyway.
-            const counts = active ? undefined : unreadForChannel.get(channel.id);
-            const hasUnread = (counts?.unread ?? 0) > 0;
-            return (
-              <li key={channel.id}>
-                <Link
-                  href={href}
-                  title={channel.archived ? "Archived channel" : undefined}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-2 py-1 text-[15px] transition",
-                    active
-                      ? "bg-[var(--ws-active)] text-white"
-                      : hasUnread
-                        ? "font-bold text-white hover:bg-white/10"
-                        : "text-white/80 hover:bg-white/10",
-                    channel.archived && !active && "opacity-50",
-                  )}
-                >
-                  {channel.archived ? (
-                    <Archive className="size-3.5 shrink-0" />
-                  ) : channel.isPrivate ? (
-                    <Lock className="size-3.5 shrink-0" />
-                  ) : (
-                    <Hash className="size-3.5 shrink-0" />
-                  )}
-                  <span className="truncate">{channel.name}</span>
-                  <UnreadBadge
-                    unread={counts?.unread ?? 0}
-                    mentions={counts?.mentions ?? 0}
-                  />
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        {!collapsed.Channels && (
+          <ul className="mb-4 mt-1 space-y-0.5">{regularChannels.map(channelRow)}</ul>
+        )}
 
         {/* Direct messages */}
         <SectionHeader
           label="Direct messages"
+          collapsed={collapsed["Direct messages"]}
+          onToggle={() => toggleSection("Direct messages")}
           onAdd={() => setDmDialog(true)}
           addLabel="New message"
           icon={<MessageSquarePlus className="size-4" />}
         />
-        <ul className="mt-1 space-y-0.5">
-          {liveConversations.map((conv) => {
-            const href = `/w/${workspace.id}/d/${conv.id}`;
-            const active = pathname === href;
-            const other = conv.users[0];
-            const counts = active
-              ? undefined
-              : unreadForConversation.get(conv.id);
-            const hasUnread = (counts?.unread ?? 0) > 0;
-            return (
-              <li key={conv.id}>
-                <Link
-                  href={href}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-2 py-1 text-[15px] transition",
-                    active
-                      ? "bg-[var(--ws-active)] text-white"
-                      : hasUnread
-                        ? "font-bold text-white hover:bg-white/10"
-                        : "text-white/80 hover:bg-white/10",
-                  )}
-                >
-                  {other && (
-                    <UserAvatar
-                      name={other.name}
-                      image={other.image}
-                      className="size-5 rounded"
-                      online={presenceOf.get(other.id) ?? false}
-                    />
-                  )}
-                  <span className="truncate">
-                    {conv.name}
-                    {conv.isSelf && (
-                      <span className="ml-1 text-xs text-white/50">you</span>
-                    )}
-                  </span>
-                  <UnreadBadge
-                    unread={counts?.unread ?? 0}
-                    mentions={counts?.mentions ?? 0}
-                  />
-                </Link>
+        {!collapsed["Direct messages"] && (
+          <ul className="mt-1 space-y-0.5">
+            {regularConvs.map(convRow)}
+            {regularConvs.length === 0 && !hasStarred && (
+              <li className="px-2 py-1 text-sm text-white/50">
+                No direct messages yet.
               </li>
-            );
-          })}
-          {liveConversations.length === 0 && (
-            <li className="px-2 py-1 text-sm text-white/50">
-              No direct messages yet.
-            </li>
-          )}
-        </ul>
+            )}
+          </ul>
+        )}
       </div>
 
       <div className="flex items-center gap-2 border-t border-white/10 px-3 py-2.5">
@@ -323,31 +385,68 @@ export function WorkspaceSidebar({
   );
 }
 
+function StarToggle({
+  starred,
+  onToggle,
+}: {
+  starred: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggle();
+      }}
+      title={starred ? "Remove from starred" : "Star"}
+      className={cn(
+        "absolute right-1 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded text-white/60 transition hover:text-white",
+        starred ? "opacity-100" : "opacity-0 group-hover/row:opacity-100",
+      )}
+    >
+      <Star className={cn("size-3.5", starred && "fill-yellow-300 text-yellow-300")} />
+    </button>
+  );
+}
+
 function SectionHeader({
   label,
+  collapsed,
+  onToggle,
   onAdd,
   addLabel,
   icon,
 }: {
   label: string;
-  onAdd: () => void;
-  addLabel: string;
+  collapsed?: boolean;
+  onToggle: () => void;
+  onAdd?: () => void;
+  addLabel?: string;
   icon?: React.ReactNode;
 }) {
   return (
     <div className="group flex items-center justify-between px-2 py-1">
-      <span className="text-xs font-semibold uppercase tracking-wide text-white/60">
-        {label}
-      </span>
       <button
         type="button"
-        onClick={onAdd}
-        aria-label={addLabel}
-        title={addLabel}
-        className="flex size-5 items-center justify-center rounded text-white/70 transition hover:bg-white/10 hover:text-white"
+        onClick={onToggle}
+        className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-white/60 transition hover:text-white/80"
       >
-        {icon ?? <Plus className="size-4" />}
+        <ChevronRight className={cn("size-3 transition-transform", !collapsed && "rotate-90")} />
+        {label}
       </button>
+      {onAdd && (
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-label={addLabel}
+          title={addLabel}
+          className="flex size-5 items-center justify-center rounded text-white/70 transition hover:bg-white/10 hover:text-white"
+        >
+          {icon ?? <Plus className="size-4" />}
+        </button>
+      )}
     </div>
   );
 }
