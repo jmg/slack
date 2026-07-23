@@ -4,6 +4,8 @@ import { createSession, verifyPassword } from "@/lib/auth";
 import { loginSchema } from "@/lib/validators";
 import { apiError, handle } from "@/lib/api";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { assertSameOrigin } from "@/lib/csrf";
+import { recordAudit } from "@/lib/audit";
 
 // A constant, valid bcrypt hash. When the account doesn't exist we still run a
 // compare against this so the miss path costs ~the same as a hit — otherwise
@@ -14,6 +16,7 @@ const WINDOW_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
   return handle(async () => {
+    assertSameOrigin(req);
     const json = await req.json().catch(() => null);
     const parsed = loginSchema.safeParse(json);
     if (!parsed.success) {
@@ -45,6 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     await createSession(user);
+    recordAudit({ action: "auth.login", actorId: user.id });
     return NextResponse.json({ id: user.id, name: user.name, email: user.email });
   });
 }

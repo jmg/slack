@@ -4,9 +4,12 @@ import { createSession, hashPassword } from "@/lib/auth";
 import { registerSchema } from "@/lib/validators";
 import { apiError, handle } from "@/lib/api";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { assertSameOrigin } from "@/lib/csrf";
+import { recordAudit } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   return handle(async () => {
+    assertSameOrigin(req);
     // Throttle signups per-IP to blunt mass account creation / email probing.
     const limited = rateLimit(`register:ip:${clientIp(req)}`, 10, 60 * 60 * 1000);
     if (!limited.allowed) {
@@ -32,6 +35,7 @@ export async function POST(req: NextRequest) {
       data: { name, email, passwordHash: await hashPassword(password) },
     });
     await createSession(user);
+    recordAudit({ action: "auth.register", actorId: user.id });
 
     return NextResponse.json({ id: user.id, name: user.name, email: user.email });
   });

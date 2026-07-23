@@ -4,6 +4,7 @@ import { apiError, handle, requireUser } from "@/lib/api";
 import { requireChannelAccess } from "@/lib/data";
 import { broadcastChannelMembers } from "@/lib/realtime";
 import { publishToUsers } from "@/lib/events";
+import { recordAudit } from "@/lib/audit";
 
 /**
  * Remove someone from a channel — or leave it yourself.
@@ -68,6 +69,14 @@ export async function DELETE(
     if (channel.isPrivate) {
       publishToUsers(channel.workspaceId, [userId], { kind: "channels" });
     }
+    recordAudit({
+      action: isSelf ? "channel.member.leave" : "channel.member.remove",
+      actorId: user.id,
+      workspaceId: channel.workspaceId,
+      targetType: "user",
+      targetId: userId,
+      meta: { channelId },
+    });
 
     return NextResponse.json({ ok: true });
   });

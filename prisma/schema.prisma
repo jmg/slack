@@ -271,3 +271,20 @@ model Star {
   @@unique([userId, conversationId])
   @@index([userId])
 }
+
+/// Append-only audit trail for auth + state-changing/admin actions. Stores ids
+/// as plain strings (no FKs) so entries survive the referenced rows being
+/// deleted — the whole point of an audit log.
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  actorId     String?
+  workspaceId String?
+  targetType  String?
+  targetId    String?
+  meta        String?
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([actorId, createdAt])
+}

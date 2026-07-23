@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
+import { recordAudit } from "@/lib/audit";
 
 /** Join the workspace behind an invite token. Requires being signed in. */
 export async function POST(
@@ -26,6 +27,11 @@ export async function POST(
       },
       update: {},
       create: { workspaceId: invite.workspaceId, userId: user.id, role: "MEMBER" },
+    });
+    recordAudit({
+      action: "invite.accept",
+      actorId: user.id,
+      workspaceId: invite.workspaceId,
     });
 
     return NextResponse.json({ workspaceId: invite.workspaceId });

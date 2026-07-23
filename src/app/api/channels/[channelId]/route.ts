@@ -7,6 +7,7 @@ import {
   broadcastChannelRemoved,
   broadcastChannelUpdated,
 } from "@/lib/realtime";
+import { recordAudit } from "@/lib/audit";
 
 const patchSchema = z
   .object({
@@ -90,6 +91,14 @@ export async function DELETE(
       workspaceId: channel.workspaceId,
       isPrivate: channel.isPrivate,
       memberIds: members.map((m) => m.userId),
+    });
+    recordAudit({
+      action: "channel.delete",
+      actorId: user.id,
+      workspaceId: channel.workspaceId,
+      targetType: "channel",
+      targetId: channelId,
+      meta: { name: channel.name },
     });
     return NextResponse.json({ ok: true });
   });

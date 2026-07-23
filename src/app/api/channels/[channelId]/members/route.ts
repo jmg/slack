@@ -4,6 +4,7 @@ import { apiError, handle, requireUser } from "@/lib/api";
 import { requireChannelAccess } from "@/lib/data";
 import { isOnline } from "@/lib/mentions";
 import { broadcastChannelMembers } from "@/lib/realtime";
+import { recordAudit } from "@/lib/audit";
 import { z } from "zod";
 
 const addMemberSchema = z.object({ userId: z.string().min(1) });
@@ -103,6 +104,14 @@ export async function POST(
     });
 
     await broadcastChannelMembers(channelId);
+    recordAudit({
+      action: "channel.member.add",
+      actorId: user.id,
+      workspaceId: channel.workspaceId,
+      targetType: "user",
+      targetId: parsed.data.userId,
+      meta: { channelId },
+    });
 
     return NextResponse.json({ ok: true });
   });
