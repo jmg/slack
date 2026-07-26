@@ -276,7 +276,12 @@ export function ChannelMembersDialog({
             ))}
             {addable.length === 0 && (
               <p className="px-1 py-2 text-sm text-muted-foreground">
-                Everyone in the workspace is already here.
+                Everyone in the workspace is already here. To add someone new,
+                open the workspace menu (the{" "}
+                <span className="font-medium text-foreground">▾</span> next to the
+                workspace name) → <span className="font-medium text-foreground">Invite people</span>,
+                then use <span className="font-medium text-foreground">Add by email</span> or
+                share the invite link.
               </p>
             )}
           </div>
