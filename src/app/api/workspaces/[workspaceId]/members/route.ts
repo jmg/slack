@@ -6,6 +6,8 @@ import { isOnline } from "@/lib/mentions";
 import { addWorkspaceMemberSchema } from "@/lib/validators";
 import { assertSameOrigin } from "@/lib/csrf";
 import { recordAudit } from "@/lib/audit";
+import { sendEmail } from "@/lib/email";
+import { appBaseUrl, getOrCreateInvite } from "@/lib/invites";
 
 export async function GET(
   _req: NextRequest,
@@ -48,10 +50,12 @@ export async function GET(
 }
 
 /**
- * Add an existing account to the workspace by email (admin only, matching who
- * may invite). There's no email delivery here, so we only add people who already
- * have an account; if there's no match, the caller is pointed at the invite link
- * so the person can sign up and join themselves.
+ * Invite someone to the workspace by email (admin only). If they already have an
+ * account we add them straight away and email a heads-up; if not, we email them
+ * the workspace invite link so they can sign up and join — the admin never has
+ * to copy/paste a link manually. Email delivery is best-effort: when SendGrid is
+ * unconfigured or fails we still return the invite token so the client can fall
+ * back to sharing the link.
  */
 export async function POST(
   req: NextRequest,
@@ -73,15 +77,31 @@ export async function POST(
     }
     const { email } = parsed.data;
 
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true },
+    });
+    const workspaceName = workspace?.name ?? "the workspace";
+    const base = appBaseUrl(req);
+    const inviter = user.name;
+
     const target = await prisma.user.findUnique({
       where: { email },
       select: { id: true, name: true, email: true, image: true },
     });
+
     if (!target) {
-      // Not an error: there's just no account yet. Tell the client so it can
-      // hand over the invite link (opening it walks them through sign-up and
-      // then joins them to the workspace).
-      return NextResponse.json({ noAccount: true, email });
+      // No account yet: email them the invite link (opening it walks them
+      // through sign-up and then joins them to the workspace).
+      const invite = await getOrCreateInvite(workspaceId, user.id);
+      const url = `${base}/invite/${invite.token}`;
+      const emailed = await sendEmail({
+        to: email,
+        subject: `${inviter} invited you to ${workspaceName} on Slack`,
+        text: `${inviter} invited you to join the "${workspaceName}" workspace.\n\nCreate your account and join here:\n${url}\n\nThis link expires in 7 days.`,
+        html: inviteEmailHtml({ inviter, workspaceName, url, cta: "Join the workspace" }),
+      }).catch(() => false);
+      return NextResponse.json({ invited: true, email, emailed, token: invite.token });
     }
 
     const existing = await prisma.workspaceMember.findUnique({
@@ -102,11 +122,43 @@ export async function POST(
       targetId: target.id,
     });
 
+    // Best-effort heads-up so they know they've been added.
+    const url = `${base}/w/${workspaceId}`;
+    const emailed = await sendEmail({
+      to: target.email,
+      subject: `${inviter} added you to ${workspaceName} on Slack`,
+      text: `${inviter} added you to the "${workspaceName}" workspace.\n\nOpen it here:\n${url}`,
+      html: inviteEmailHtml({ inviter, workspaceName, url, cta: "Open the workspace" }),
+    }).catch(() => false);
+
     return NextResponse.json({
       id: target.id,
       name: target.name,
       email: target.email,
       image: target.image,
+      emailed,
     });
   });
+}
+
+function inviteEmailHtml(o: {
+  inviter: string;
+  workspaceName: string;
+  url: string;
+  cta: string;
+}): string {
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1d1c1d">
+    <h2 style="font-size:20px;margin:0 0 8px">Join <strong>${esc(o.workspaceName)}</strong></h2>
+    <p style="font-size:15px;line-height:1.5;color:#454245;margin:0 0 20px">
+      <strong>${esc(o.inviter)}</strong> invited you to the <strong>${esc(o.workspaceName)}</strong> workspace.
+    </p>
+    <p style="margin:0 0 24px">
+      <a href="${esc(o.url)}" style="display:inline-block;background:#4A154B;color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 20px;border-radius:8px">${esc(o.cta)}</a>
+    </p>
+    <p style="font-size:13px;color:#616061;margin:0">Or paste this link into your browser:<br>
+      <a href="${esc(o.url)}" style="color:#1264a3;word-break:break-all">${esc(o.url)}</a>
+    </p>
+  </div>`;
 }

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { requireWorkspaceMember } from "@/lib/data";
-
-const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+import { getOrCreateInvite } from "@/lib/invites";
 
 /**
  * Get (or create) the workspace's active invite link. ADMINs only. Pass
@@ -24,31 +22,16 @@ export async function POST(
 
     const body = await req.json().catch(() => ({}));
     const regenerate = body?.regenerate === true;
-    const now = new Date();
 
-    let invite = await prisma.invite.findFirst({
-      where: { workspaceId, revokedAt: null, expiresAt: { gt: now } },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (regenerate && invite) {
-      await prisma.invite.update({
-        where: { id: invite.id },
-        data: { revokedAt: now },
-      });
-      invite = null;
-    }
-
-    if (!invite) {
-      invite = await prisma.invite.create({
-        data: {
-          workspaceId,
-          token: randomBytes(18).toString("base64url"),
-          createdById: user.id,
-          expiresAt: new Date(now.getTime() + INVITE_TTL_MS),
-        },
+    if (regenerate) {
+      // Revoke any current link so getOrCreateInvite mints a fresh one.
+      await prisma.invite.updateMany({
+        where: { workspaceId, revokedAt: null },
+        data: { revokedAt: new Date() },
       });
     }
+
+    const invite = await getOrCreateInvite(workspaceId, user.id);
 
     return NextResponse.json({
       token: invite.token,

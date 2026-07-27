@@ -64,16 +64,27 @@ export function InviteDialog({
         body: JSON.stringify({ email: value }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Could not add them");
-      if (data.noAccount) {
-        // No account yet — copy the invite link so they can sign up and join.
-        if (url) await navigator.clipboard.writeText(url).catch(() => {});
-        toast.info(
-          `No account for ${value} yet — invite link copied. Send it so they can create an account and join.`,
-        );
+      if (!res.ok) throw new Error(data.error ?? "Could not invite them");
+      if (data.invited) {
+        // No account yet — we emailed them the invite link. If email delivery
+        // failed (SendGrid down/unconfigured), fall back to copying the link.
+        if (data.emailed) {
+          toast.success(`Invite emailed to ${value}`);
+        } else {
+          const link = data.token
+            ? `${window.location.origin}/invite/${data.token}`
+            : url;
+          if (link) await navigator.clipboard.writeText(link).catch(() => {});
+          toast.info(`Couldn't email ${value} — invite link copied, send it to them.`);
+        }
+        setEmail("");
         return;
       }
-      toast.success(`${data.name} was added to the workspace`);
+      toast.success(
+        data.emailed
+          ? `${data.name} was added and emailed`
+          : `${data.name} was added to the workspace`,
+      );
       setEmail("");
       // Refresh the member list wherever it's shown.
       void mutate(`/api/workspaces/${workspaceId}/members`);
@@ -124,15 +135,15 @@ export function InviteDialog({
         <DialogHeader>
           <DialogTitle>Invite people</DialogTitle>
           <DialogDescription>
-            Add someone who already has an account by email, or share the invite
-            link so anyone can join.
+            Enter an email and we&apos;ll send the invite for you — or share the
+            link below so anyone can join.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Add an existing account by email */}
+        {/* Invite by email — the app emails the person directly */}
         <form onSubmit={addByEmail}>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Add by email
+            Invite by email
           </label>
           <div className="flex gap-2">
             <Input
@@ -143,12 +154,12 @@ export function InviteDialog({
               autoComplete="off"
             />
             <Button type="submit" disabled={adding || !email.trim()}>
-              <UserPlus className="size-4" /> Add
+              <UserPlus className="size-4" /> {adding ? "Sending…" : "Send invite"}
             </Button>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            They must already have an account. No account yet? Send them the link
-            below.
+            We&apos;ll email them an invite. If they already have an account,
+            they&apos;re added right away.
           </p>
         </form>
 
