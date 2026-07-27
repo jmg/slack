@@ -26,7 +26,7 @@ model User {
   /// issued at; getCurrentUser rejects the token when they no longer match.
   tokenVersion Int      @default(0)
   /// Email me about messages I haven't seen (see the notify-emails cron).
-  emailNotifications Boolean @default(false)
+  emailNotifications Boolean @default(true)
   /// Dedupe cursor for that cron: messages created at/before this have already
   /// been considered for an email, so we never notify the same message twice.
   lastNotifiedAt DateTime?
