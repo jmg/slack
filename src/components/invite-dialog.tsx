@@ -65,6 +65,14 @@ export function InviteDialog({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Could not add them");
+      if (data.noAccount) {
+        // No account yet — copy the invite link so they can sign up and join.
+        if (url) await navigator.clipboard.writeText(url).catch(() => {});
+        toast.info(
+          `No account for ${value} yet — invite link copied. Send it so they can create an account and join.`,
+        );
+        return;
+      }
       toast.success(`${data.name} was added to the workspace`);
       setEmail("");
       // Refresh the member list wherever it's shown.

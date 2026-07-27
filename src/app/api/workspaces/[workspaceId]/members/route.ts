@@ -78,10 +78,10 @@ export async function POST(
       select: { id: true, name: true, email: true, image: true },
     });
     if (!target) {
-      return apiError(
-        "No account with that email yet — share the invite link so they can join",
-        404,
-      );
+      // Not an error: there's just no account yet. Tell the client so it can
+      // hand over the invite link (opening it walks them through sign-up and
+      // then joins them to the workspace).
+      return NextResponse.json({ noAccount: true, email });
     }
 
     const existing = await prisma.workspaceMember.findUnique({
