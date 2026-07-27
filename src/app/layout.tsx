@@ -13,9 +13,42 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL =
+  process.env.APP_BASE_URL?.replace(/\/+$/, "") ?? "https://slack.devcloudsoftware.com";
+
 export const metadata: Metadata = {
-  title: "Slack — a Slack clone",
-  description: "A Slack-style team messaging app built with Next.js, Postgres, Prisma and shadcn/ui.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Slack — open team messaging",
+    template: "%s · Slack",
+  },
+  description:
+    "A fast, open team-chat app: channels, threads, direct messages, mentions, search and file sharing. Built with Next.js, Postgres and Prisma.",
+  applicationName: "Slack",
+  keywords: [
+    "team chat",
+    "team messaging",
+    "channels",
+    "threads",
+    "direct messages",
+    "slack clone",
+    "open source chat",
+  ],
+  authors: [{ name: "Slack" }],
+  openGraph: {
+    type: "website",
+    siteName: "Slack",
+    url: SITE_URL,
+    title: "Slack — open team messaging",
+    description:
+      "Channels, threads, DMs, mentions, search and file sharing — a fast open team-chat app.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Slack — open team messaging",
+    description:
+      "Channels, threads, DMs, mentions, search and file sharing — a fast open team-chat app.",
+  },
 };
 
 export default function RootLayout({
