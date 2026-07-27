@@ -23,7 +23,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -248,12 +247,14 @@ export function WorkspaceSidebar({
           <ChevronDown className="size-4 shrink-0 text-white/80" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel className="flex flex-col">
-            <span className="font-semibold">{user.name}</span>
+          {/* Plain div, not DropdownMenuLabel: Base UI's GroupLabel throws (#31)
+              unless it's inside a Menu.Group, and this is just a header. */}
+          <div className="flex flex-col px-2 py-1.5">
+            <span className="text-sm font-semibold">{user.name}</span>
             <span className="text-xs font-normal text-muted-foreground">
               {user.email}
             </span>
-          </DropdownMenuLabel>
+          </div>
           <DropdownMenuSeparator />
           {isAdmin && (
             <DropdownMenuItem onClick={() => setInviteOpen(true)}>
