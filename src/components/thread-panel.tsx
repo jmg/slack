@@ -13,12 +13,14 @@ export function ThreadPanel({
   messageId,
   currentUserId,
   workspaceId,
+  mentionNames,
   onClose,
   onThreadChanged,
 }: {
   messageId: string;
   currentUserId: string;
   workspaceId?: string;
+  mentionNames?: string[];
   onClose: () => void;
   onThreadChanged: () => void;
 }) {
@@ -125,6 +127,7 @@ export function ThreadPanel({
               onEdit={editMessage}
               onDelete={deleteMessage}
               hideThreadIndicator
+              mentionNames={mentionNames}
             />
             <div className="my-2 flex items-center gap-3 px-4">
               <span className="text-xs font-semibold text-muted-foreground">
@@ -143,6 +146,7 @@ export function ThreadPanel({
                 onEdit={editMessage}
                 onDelete={deleteMessage}
                 hideThreadIndicator
+                mentionNames={mentionNames}
               />
             ))}
           </>

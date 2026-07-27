@@ -38,6 +38,12 @@ export function ChatView({
   // No polling: the workspace SSE stream revalidates this key the instant a
   // message lands, is edited/deleted, or gets a reaction (see useWorkspaceEvents).
   const { data: messages = [], mutate } = useSWR<SerializedMessage[]>(messagesUrl);
+  // Member names power full-name @mention highlighting in the timeline. SWR
+  // dedupes this with the composer's identical request, so it's not a 2nd fetch.
+  const { data: workspaceMembers = [] } = useSWR<{ name: string }[]>(
+    workspaceId ? `/api/workspaces/${workspaceId}/members` : null,
+  );
+  const mentionNames = workspaceMembers.map((m) => m.name);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
   const { mutate: globalMutate } = useSWRConfig();
@@ -180,6 +186,7 @@ export function ChatView({
           onDelete={deleteMessage}
           onOpenThread={(m) => setThreadId(m.id)}
           onMarkUnread={markUnread}
+          mentionNames={mentionNames}
           emptyState={
             <div className="px-4 pb-6">
               <div className="flex items-center gap-2 text-2xl font-bold">
@@ -228,6 +235,7 @@ export function ChatView({
           messageId={threadId}
           currentUserId={currentUserId}
           workspaceId={workspaceId}
+          mentionNames={mentionNames}
           onClose={() => setThreadId(null)}
           onThreadChanged={() => mutate()}
         />

@@ -51,10 +51,12 @@ export function MessageItem({
   onOpenThread,
   onMarkUnread,
   hideThreadIndicator,
+  mentionNames,
 }: {
   message: SerializedMessage;
   showHeader: boolean;
   currentUserId: string;
+  mentionNames?: string[];
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, body: string) => Promise<void>;
   onDelete?: (messageId: string) => void;
@@ -68,6 +70,13 @@ export function MessageItem({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.body);
   const [saving, setSaving] = useState(false);
+  // Keep the hover toolbar mounted while a menu is open. Otherwise moving the
+  // mouse off the message collapses the `group-hover:flex` container to
+  // display:none, the open popup loses its anchor, and Base UI re-positions it
+  // at the top-left corner (0,0).
+  const [reactionOpen, setReactionOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const menuOpen = reactionOpen || moreOpen;
 
   async function saveEdit() {
     const body = draft.trim();
@@ -160,7 +169,7 @@ export function MessageItem({
           <>
             {message.body && (
               <div className="flex items-baseline gap-1">
-                <MessageBody body={message.body} />
+                <MessageBody body={message.body} mentionNames={mentionNames} />
                 {message.editedAt && (
                   <span className="text-[11px] text-muted-foreground">(edited)</span>
                 )}
@@ -222,15 +231,20 @@ export function MessageItem({
       </div>
 
       {!editing && !deleted && (
-        <div className="absolute -top-3 right-3 hidden items-center rounded-md border bg-background shadow-sm group-hover:flex">
-          <DropdownMenu>
+        <div
+          className={cn(
+            "absolute -top-3 right-3 items-center rounded-md border bg-background shadow-sm",
+            menuOpen ? "flex" : "hidden group-hover:flex",
+          )}
+        >
+          <DropdownMenu open={reactionOpen} onOpenChange={setReactionOpen}>
             <DropdownMenuTrigger
               className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
               aria-label="Add reaction"
             >
               <SmilePlus className="size-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="flex gap-1 p-1">
+            <DropdownMenuContent align="end" className="flex w-auto gap-1 p-1">
               {EMOJIS.map((emoji) => (
                 <button
                   key={emoji}
@@ -257,7 +271,7 @@ export function MessageItem({
           )}
 
           {(!hideThreadIndicator || (isMine && (onEdit || onDelete))) && (
-            <DropdownMenu>
+            <DropdownMenu open={moreOpen} onOpenChange={setMoreOpen}>
               <DropdownMenuTrigger
                 className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 aria-label="More actions"

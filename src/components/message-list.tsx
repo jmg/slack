@@ -17,9 +17,11 @@ export function MessageList({
   onOpenThread,
   onMarkUnread,
   emptyState,
+  mentionNames,
 }: {
   messages: SerializedMessage[];
   currentUserId: string;
+  mentionNames?: string[];
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, body: string) => Promise<void>;
   onDelete?: (messageId: string) => void;
@@ -84,6 +86,7 @@ export function MessageList({
         onDelete={onDelete}
         onOpenThread={onOpenThread}
         onMarkUnread={onMarkUnread}
+        mentionNames={mentionNames}
       />,
     );
 
