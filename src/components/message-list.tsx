@@ -18,10 +18,12 @@ export function MessageList({
   onMarkUnread,
   emptyState,
   mentionNames,
+  canModerate,
 }: {
   messages: SerializedMessage[];
   currentUserId: string;
   mentionNames?: string[];
+  canModerate?: boolean;
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, body: string) => Promise<void>;
   onDelete?: (messageId: string) => void;
@@ -87,6 +89,7 @@ export function MessageList({
         onOpenThread={onOpenThread}
         onMarkUnread={onMarkUnread}
         mentionNames={mentionNames}
+        canModerate={canModerate}
       />,
     );
 

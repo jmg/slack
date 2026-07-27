@@ -147,6 +147,37 @@ export async function requireChannelManager(userId: string, channelId: string) {
   return channel;
 }
 
+/** True if the user is an ADMIN of the workspace. */
+export async function isWorkspaceAdmin(userId: string, workspaceId: string) {
+  const m = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId, userId } },
+    select: { role: true },
+  });
+  return m?.role === "ADMIN";
+}
+
+/** The workspace a message belongs to (via its channel or conversation). */
+export async function messageWorkspaceId(message: {
+  channelId: string | null;
+  conversationId: string | null;
+}): Promise<string | null> {
+  if (message.channelId) {
+    const c = await prisma.channel.findUnique({
+      where: { id: message.channelId },
+      select: { workspaceId: true },
+    });
+    return c?.workspaceId ?? null;
+  }
+  if (message.conversationId) {
+    const c = await prisma.conversation.findUnique({
+      where: { id: message.conversationId },
+      select: { workspaceId: true },
+    });
+    return c?.workspaceId ?? null;
+  }
+  return null;
+}
+
 export async function requireConversationMember(
   userId: string,
   conversationId: string,

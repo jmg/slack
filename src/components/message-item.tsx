@@ -52,11 +52,14 @@ export function MessageItem({
   onMarkUnread,
   hideThreadIndicator,
   mentionNames,
+  canModerate,
 }: {
   message: SerializedMessage;
   showHeader: boolean;
   currentUserId: string;
   mentionNames?: string[];
+  /** Current user is a workspace admin: can delete others' messages. */
+  canModerate?: boolean;
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, body: string) => Promise<void>;
   onDelete?: (messageId: string) => void;
@@ -270,7 +273,9 @@ export function MessageItem({
             </button>
           )}
 
-          {(!hideThreadIndicator || (isMine && (onEdit || onDelete))) && (
+          {(!hideThreadIndicator ||
+            (isMine && (onEdit || onDelete)) ||
+            (canModerate && onDelete)) && (
             <DropdownMenu open={moreOpen} onOpenChange={setMoreOpen}>
               <DropdownMenuTrigger
                 className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
@@ -299,12 +304,13 @@ export function MessageItem({
                     <Pencil className="size-4" /> Edit message
                   </DropdownMenuItem>
                 )}
-                {isMine && onDelete && (
+                {(isMine || canModerate) && onDelete && (
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() => onDelete(message.id)}
                   >
-                    <Trash2 className="size-4" /> Delete message
+                    <Trash2 className="size-4" />{" "}
+                    {isMine ? "Delete message" : "Delete (admin)"}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>

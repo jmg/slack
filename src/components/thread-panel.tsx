@@ -14,6 +14,7 @@ export function ThreadPanel({
   currentUserId,
   workspaceId,
   mentionNames,
+  canModerate,
   onClose,
   onThreadChanged,
 }: {
@@ -21,6 +22,7 @@ export function ThreadPanel({
   currentUserId: string;
   workspaceId?: string;
   mentionNames?: string[];
+  canModerate?: boolean;
   onClose: () => void;
   onThreadChanged: () => void;
 }) {
@@ -128,6 +130,7 @@ export function ThreadPanel({
               onDelete={deleteMessage}
               hideThreadIndicator
               mentionNames={mentionNames}
+              canModerate={canModerate}
             />
             <div className="my-2 flex items-center gap-3 px-4">
               <span className="text-xs font-semibold text-muted-foreground">
@@ -147,6 +150,7 @@ export function ThreadPanel({
                 onDelete={deleteMessage}
                 hideThreadIndicator
                 mentionNames={mentionNames}
+                canModerate={canModerate}
               />
             ))}
           </>

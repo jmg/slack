@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Mail, ScrollText } from "lucide-react";
+import { ArrowLeft, Check, Mail, ScrollText, Shield, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -309,6 +309,8 @@ export function SettingsView({
           </label>
         </section>
 
+        {isAdmin && <MembersSection workspaceId={workspaceId} />}
+
         {isAdmin && <AuditSection workspaceId={workspaceId} />}
 
         {/* Danger zone */}
@@ -332,6 +334,112 @@ export function SettingsView({
         </section>
       </div>
     </div>
+  );
+}
+
+type WsMember = {
+  id: string;
+  name: string;
+  email: string;
+  image: string | null;
+  role: "ADMIN" | "MEMBER";
+  isMe: boolean;
+  online: boolean;
+};
+
+/** Admin-only: promote/demote and remove workspace members. */
+function MembersSection({ workspaceId }: { workspaceId: string }) {
+  const { data, mutate } = useSWR<WsMember[]>(`/api/workspaces/${workspaceId}/members`);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function setRole(m: WsMember, role: "ADMIN" | "MEMBER") {
+    setBusy(m.id);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members/${m.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error ?? "Could not update role");
+      toast.success(`${m.name} is now ${role === "ADMIN" ? "an admin" : "a member"}`);
+      void mutate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update role");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function remove(m: WsMember) {
+    if (!confirm(`Remove ${m.name} from this workspace?`)) return;
+    setBusy(m.id);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members/${m.id}`, {
+        method: "DELETE",
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error ?? "Could not remove them");
+      toast.success(`${m.name} was removed`);
+      void mutate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove them");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-lg border p-5">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <Shield className="size-4" /> Members &amp; roles
+      </h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Admins can rename the workspace, invite &amp; remove people, manage roles,
+        and delete anyone&apos;s messages.
+      </p>
+      <div className="mt-3">
+        {(!data || data.length === 0) && (
+          <p className="text-sm text-muted-foreground">No members yet.</p>
+        )}
+        {data?.map((m) => (
+          <div
+            key={m.id}
+            className="flex items-center gap-3 border-b py-2 last:border-0"
+          >
+            <UserAvatar name={m.name} image={m.image} className="size-8" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">
+                {m.name}
+                {m.isMe && <span className="text-muted-foreground"> (you)</span>}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">{m.email}</p>
+            </div>
+            <select
+              value={m.role}
+              disabled={m.isMe || busy === m.id}
+              onChange={(e) => setRole(m, e.target.value as "ADMIN" | "MEMBER")}
+              className="rounded-md border bg-background px-2 py-1 text-xs disabled:opacity-50"
+              title={m.isMe ? "You can't change your own role" : "Change role"}
+            >
+              <option value="MEMBER">Member</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+            {!m.isMe && (
+              <button
+                type="button"
+                onClick={() => remove(m)}
+                disabled={busy === m.id}
+                title="Remove from workspace"
+                className="rounded-md p-1.5 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+              >
+                <UserMinus className="size-4" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

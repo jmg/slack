@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { updateMessageSchema } from "@/lib/validators";
-import { requireMessageAccess } from "@/lib/data";
+import { isWorkspaceAdmin, messageWorkspaceId, requireMessageAccess } from "@/lib/data";
 import { messageInclude, serializeMessage } from "@/lib/messages";
 import { broadcastMessage } from "@/lib/realtime";
 
@@ -46,7 +46,12 @@ export async function DELETE(
     const { messageId } = await params;
     const message = await requireMessageAccess(user.id, messageId);
     if (message.userId !== user.id) {
-      return apiError("You can only delete your own messages", 403);
+      // Workspace admins can moderate (delete) anyone's message, Slack-style.
+      const wsId = await messageWorkspaceId(message);
+      const canModerate = wsId ? await isWorkspaceAdmin(user.id, wsId) : false;
+      if (!canModerate) {
+        return apiError("You can only delete your own messages", 403);
+      }
     }
 
     // If this message is the root of a thread, other people's replies hang off

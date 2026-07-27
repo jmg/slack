@@ -44,10 +44,13 @@ export function ChatView({
   const { data: messages = [], mutate } = useSWR<SerializedMessage[]>(messagesUrl);
   // Member names power full-name @mention highlighting in the timeline. SWR
   // dedupes this with the composer's identical request, so it's not a 2nd fetch.
-  const { data: workspaceMembers = [] } = useSWR<{ name: string }[]>(
-    workspaceId ? `/api/workspaces/${workspaceId}/members` : null,
-  );
+  const { data: workspaceMembers = [] } = useSWR<
+    { name: string; isMe?: boolean; role?: "ADMIN" | "MEMBER" }[]
+  >(workspaceId ? `/api/workspaces/${workspaceId}/members` : null);
   const mentionNames = workspaceMembers.map((m) => m.name);
+  // Workspace admins can delete anyone's message (moderation). Enforced server
+  // side too — this just surfaces the action in the UI.
+  const canModerate = workspaceMembers.some((m) => m.isMe && m.role === "ADMIN");
   const [threadId, setThreadId] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
   const { mutate: globalMutate } = useSWRConfig();
@@ -216,6 +219,7 @@ export function ChatView({
           onOpenThread={(m) => setThreadId(m.id)}
           onMarkUnread={markUnread}
           mentionNames={mentionNames}
+          canModerate={canModerate}
           emptyState={
             <div className="px-4 pb-6">
               <div className="flex items-center gap-2 text-2xl font-bold">
@@ -283,6 +287,7 @@ export function ChatView({
           currentUserId={currentUserId}
           workspaceId={workspaceId}
           mentionNames={mentionNames}
+          canModerate={canModerate}
           onClose={() => setThreadId(null)}
           onThreadChanged={() => mutate()}
         />
