@@ -15,6 +15,7 @@ export function ThreadPanel({
   workspaceId,
   mentionNames,
   canModerate,
+  canInteract = true,
   onClose,
   onThreadChanged,
 }: {
@@ -23,6 +24,7 @@ export function ThreadPanel({
   workspaceId?: string;
   mentionNames?: string[];
   canModerate?: boolean;
+  canInteract?: boolean;
   onClose: () => void;
   onThreadChanged: () => void;
 }) {
@@ -131,6 +133,7 @@ export function ThreadPanel({
               hideThreadIndicator
               mentionNames={mentionNames}
               canModerate={canModerate}
+              canInteract={canInteract}
             />
             <div className="my-2 flex items-center gap-3 px-4">
               <span className="text-xs font-semibold text-muted-foreground">
@@ -151,6 +154,7 @@ export function ThreadPanel({
                 hideThreadIndicator
                 mentionNames={mentionNames}
                 canModerate={canModerate}
+                canInteract={canInteract}
               />
             ))}
           </>
@@ -159,12 +163,18 @@ export function ThreadPanel({
         )}
       </div>
 
-      <MessageComposer
-        placeholder="Reply…"
-        onSend={sendReply}
-        workspaceId={workspaceId}
-        draftKey={`thread:${messageId}`}
-      />
+      {canInteract ? (
+        <MessageComposer
+          placeholder="Reply…"
+          onSend={sendReply}
+          workspaceId={workspaceId}
+          draftKey={`thread:${messageId}`}
+        />
+      ) : (
+        <p className="border-t px-4 py-4 text-center text-sm text-muted-foreground">
+          Join the channel to reply.
+        </p>
+      )}
     </aside>
   );
 }

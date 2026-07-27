@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { reactionSchema } from "@/lib/validators";
-import { requireChannelAccess, requireConversationMember } from "@/lib/data";
+import { requireChannelPostAccess, requireConversationMember } from "@/lib/data";
 import { messageInclude, serializeMessage } from "@/lib/messages";
 import { broadcastMessage } from "@/lib/realtime";
 
@@ -32,9 +32,10 @@ export async function POST(
     });
     if (!message) return apiError("Message not found", 404);
 
-    // Authorize against the channel / conversation the message lives in.
+    // Reacting is participating, so it needs channel membership (join to react),
+    // matching posting. DMs are gated by conversation membership.
     if (message.channelId) {
-      await requireChannelAccess(user.id, message.channelId);
+      await requireChannelPostAccess(user.id, message.channelId);
     } else if (message.conversationId) {
       await requireConversationMember(user.id, message.conversationId);
     } else {

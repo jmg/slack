@@ -53,6 +53,7 @@ export function MessageItem({
   hideThreadIndicator,
   mentionNames,
   canModerate,
+  canInteract = true,
 }: {
   message: SerializedMessage;
   showHeader: boolean;
@@ -60,6 +61,8 @@ export function MessageItem({
   mentionNames?: string[];
   /** Current user is a workspace admin: can delete others' messages. */
   canModerate?: boolean;
+  /** False when previewing a channel you haven't joined — hide hover actions. */
+  canInteract?: boolean;
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, body: string) => Promise<void>;
   onDelete?: (messageId: string) => void;
@@ -233,7 +236,7 @@ export function MessageItem({
         )}
       </div>
 
-      {!editing && !deleted && (
+      {!editing && !deleted && canInteract && (
         <div
           className={cn(
             "absolute -top-3 right-3 items-center rounded-md border bg-background shadow-sm",

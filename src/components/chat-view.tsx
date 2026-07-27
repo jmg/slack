@@ -51,6 +51,8 @@ export function ChatView({
   // Workspace admins can delete anyone's message (moderation). Enforced server
   // side too — this just surfaces the action in the UI.
   const canModerate = workspaceMembers.some((m) => m.isMe && m.role === "ADMIN");
+  // In a channel you're previewing (not joined), the timeline is read-only:
+  // hide the hover actions (react/reply/etc). DMs are always interactive.
   const [threadId, setThreadId] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
   const { mutate: globalMutate } = useSWRConfig();
@@ -226,6 +228,7 @@ export function ChatView({
           onMarkUnread={markUnread}
           mentionNames={mentionNames}
           canModerate={canModerate}
+          canInteract={!channelId || joined}
           emptyState={
             <div className="px-4 pb-6">
               <div className="flex items-center gap-2 text-2xl font-bold">
@@ -294,6 +297,7 @@ export function ChatView({
           workspaceId={workspaceId}
           mentionNames={mentionNames}
           canModerate={canModerate}
+          canInteract={!channelId || joined}
           onClose={() => setThreadId(null)}
           onThreadChanged={() => mutate()}
         />

@@ -19,11 +19,13 @@ export function MessageList({
   emptyState,
   mentionNames,
   canModerate,
+  canInteract = true,
 }: {
   messages: SerializedMessage[];
   currentUserId: string;
   mentionNames?: string[];
   canModerate?: boolean;
+  canInteract?: boolean;
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, body: string) => Promise<void>;
   onDelete?: (messageId: string) => void;
@@ -90,6 +92,7 @@ export function MessageList({
         onMarkUnread={onMarkUnread}
         mentionNames={mentionNames}
         canModerate={canModerate}
+        canInteract={canInteract}
       />,
     );
 
