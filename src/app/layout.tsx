@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { PwaRegister } from "@/components/pwa-register";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -49,6 +50,20 @@ export const metadata: Metadata = {
     description:
       "Channels, threads, DMs, mentions, search and file sharing — a fast open team-chat app.",
   },
+  appleWebApp: {
+    capable: true,
+    title: "Slack",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1d21" },
+  ],
+  // Let the app fill the notch/safe areas when installed to the home screen.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -63,6 +78,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>{children}</Providers>
+        <PwaRegister />
       </body>
     </html>
   );

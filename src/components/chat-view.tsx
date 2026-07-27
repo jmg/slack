@@ -59,7 +59,13 @@ export function ChatView({
   // post (Slack-style). Seeded from the server prop; flips optimistically on join.
   const [joined, setJoined] = useState(isMember);
   const [joining, setJoining] = useState(false);
-  useEffect(() => setJoined(isMember), [isMember]);
+  // Re-sync when navigating to a different channel (server prop changes) without
+  // a set-state-in-effect: adjust state during render on prop change.
+  const [syncedMember, setSyncedMember] = useState(isMember);
+  if (isMember !== syncedMember) {
+    setSyncedMember(isMember);
+    setJoined(isMember);
+  }
 
   async function joinChannel() {
     if (!channelId || joining) return;
