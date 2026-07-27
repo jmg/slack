@@ -16,6 +16,93 @@ export type Post = {
  */
 export const posts: Post[] = [
   {
+    slug: "async-first-team-communication",
+    title: "Async-first: how to make team chat calmer, not louder",
+    date: "2026-07-26",
+    description:
+      "Chat doesn't have to mean constant interruptions. A few norms turn it from a firehose into a calm, searchable record of how work gets done.",
+    author: "The team",
+    readingMinutes: 4,
+    body: (
+      <>
+        <p>
+          The complaint about team chat is always the same: it never stops. But
+          the noise isn&rsquo;t the tool&rsquo;s fault — it&rsquo;s the
+          expectation that everything is urgent. Treat chat as{" "}
+          <strong>async-first</strong> and it becomes calmer than email.
+        </p>
+        <h2>Default to &ldquo;reply when you can&rdquo;</h2>
+        <p>
+          Most messages don&rsquo;t need an answer in the next five minutes. When
+          the team agrees that a normal message is a &ldquo;reply when you
+          can&rdquo; and only an @mention or DM means &ldquo;this needs
+          you,&rdquo; people stop watching the screen and start doing focused
+          work.
+        </p>
+        <h2>Write the context in, not around</h2>
+        <p>
+          A good async message carries its own context: what, why, and what you
+          need back. It saves a dozen follow-up pings and means someone reading it
+          hours later — in a different timezone — can act without a meeting.
+        </p>
+        <h2>Let search be the memory</h2>
+        <p>
+          The quiet superpower of chat is that it&rsquo;s a searchable record.
+          Decisions made in a channel are findable next month; decisions made in a
+          meeting evaporate. Put the important stuff where search can reach it.
+        </p>
+      </>
+    ),
+  },
+  {
+    slug: "self-hosting-team-chat-checklist",
+    title: "Self-hosting your team chat: a practical checklist",
+    date: "2026-07-25",
+    description:
+      "Owning your team's chat is simpler than it sounds. Here's what you actually need to run it in production — and sleep at night.",
+    author: "Engineering",
+    readingMinutes: 5,
+    body: (
+      <>
+        <p>
+          Running your own team chat used to mean a rack of servers. Today it&rsquo;s
+          a container, a database, and a domain. Here&rsquo;s the short list that
+          takes you from &ldquo;it works on my laptop&rdquo; to a service your
+          team can rely on.
+        </p>
+        <h2>The essentials</h2>
+        <p>
+          You need three things: a web process to serve the app, a{" "}
+          <strong>Postgres</strong> database for your messages and members, and
+          somewhere to put files — either S3-compatible object storage or a
+          mounted disk. Point a domain at the web process, terminate TLS, and
+          you&rsquo;re serving traffic.
+        </p>
+        <h2>Backups are the whole game</h2>
+        <p>
+          Your database <em>is</em> your team&rsquo;s history. Automate daily
+          snapshots, keep a few weeks of them, and — this is the part people skip —{" "}
+          <strong>test a restore</strong>. A backup you&rsquo;ve never restored is
+          a hope, not a backup.
+        </p>
+        <h2>Health checks and zero-downtime deploys</h2>
+        <p>
+          Expose a simple health endpoint and have your platform poll it before
+          shifting traffic to a new release. Run database migrations in a release
+          step that finishes before the new version goes live, and keep them
+          forward-only so a rollback never leaves the schema stranded.
+        </p>
+        <h2>Keep secrets out of the build</h2>
+        <p>
+          Database URLs and API keys belong in the runtime environment, never baked
+          into a container image where they&rsquo;d live forever in its history.
+          Construct database clients lazily so a build never needs production
+          credentials in the first place.
+        </p>
+      </>
+    ),
+  },
+  {
     slug: "real-time-without-polling",
     title: "Real-time without the polling: how our chat stays live",
     date: "2026-07-24",

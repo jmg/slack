@@ -8,6 +8,7 @@ import { assertSameOrigin } from "@/lib/csrf";
 import { recordAudit } from "@/lib/audit";
 import { sendEmail } from "@/lib/email";
 import { appBaseUrl, getOrCreateInvite } from "@/lib/invites";
+import { BRAND } from "@/lib/brand";
 
 export async function GET(
   _req: NextRequest,
@@ -97,7 +98,7 @@ export async function POST(
       const url = `${base}/invite/${invite.token}`;
       const emailed = await sendEmail({
         to: email,
-        subject: `${inviter} invited you to ${workspaceName} on Slack`,
+        subject: `${inviter} invited you to ${workspaceName} on ${BRAND}`,
         text: `${inviter} invited you to join the "${workspaceName}" workspace.\n\nCreate your account and join here:\n${url}\n\nThis link expires in 7 days.`,
         html: inviteEmailHtml({ inviter, workspaceName, url, cta: "Join the workspace" }),
       }).catch(() => false);
@@ -127,7 +128,7 @@ export async function POST(
     const url = `${base}/w/${workspaceId}`;
     const emailed = await sendEmail({
       to: target.email,
-      subject: `${inviter} added you to ${workspaceName} on Slack`,
+      subject: `${inviter} added you to ${workspaceName} on ${BRAND}`,
       text: `${inviter} added you to the "${workspaceName}" workspace.\n\nOpen it here:\n${url}`,
       html: inviteEmailHtml({ inviter, workspaceName, url, cta: "Open the workspace" }),
     }).catch(() => false);

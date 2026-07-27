@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
+import { BRAND, BRAND_DESCRIPTION } from "@/lib/brand";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Slack — team messaging",
-    short_name: "Slack",
-    description:
-      "Channels, threads, DMs, mentions and search — a fast, open team-chat app.",
+    name: `${BRAND} — team messaging`,
+    short_name: BRAND,
+    description: BRAND_DESCRIPTION,
     start_url: "/",
     scope: "/",
     display: "standalone",

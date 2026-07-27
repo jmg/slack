@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { PwaRegister } from "@/components/pwa-register";
+import { BRAND, BRAND_DOMAIN, BRAND_DESCRIPTION } from "@/lib/brand";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -15,44 +16,44 @@ const geistMono = Geist_Mono({
 });
 
 const SITE_URL =
-  process.env.APP_BASE_URL?.replace(/\/+$/, "") ?? "https://slack.devcloudsoftware.com";
+  process.env.APP_BASE_URL?.replace(/\/+$/, "") ?? `https://${BRAND_DOMAIN}`;
+
+const TITLE = `${BRAND} — team messaging that keeps everyone in sync`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Slack — open team messaging",
-    template: "%s · Slack",
+    default: TITLE,
+    template: `%s · ${BRAND}`,
   },
-  description:
-    "A fast, open team-chat app: channels, threads, direct messages, mentions, search and file sharing. Built with Next.js, Postgres and Prisma.",
-  applicationName: "Slack",
+  description: BRAND_DESCRIPTION,
+  applicationName: BRAND,
   keywords: [
     "team chat",
     "team messaging",
+    "team communication",
     "channels",
     "threads",
     "direct messages",
-    "slack clone",
+    "self-hosted chat",
     "open source chat",
   ],
-  authors: [{ name: "Slack" }],
+  authors: [{ name: BRAND }],
   openGraph: {
     type: "website",
-    siteName: "Slack",
+    siteName: BRAND,
     url: SITE_URL,
-    title: "Slack — open team messaging",
-    description:
-      "Channels, threads, DMs, mentions, search and file sharing — a fast open team-chat app.",
+    title: TITLE,
+    description: BRAND_DESCRIPTION,
   },
   twitter: {
     card: "summary",
-    title: "Slack — open team messaging",
-    description:
-      "Channels, threads, DMs, mentions, search and file sharing — a fast open team-chat app.",
+    title: TITLE,
+    description: BRAND_DESCRIPTION,
   },
   appleWebApp: {
     capable: true,
-    title: "Slack",
+    title: BRAND,
     statusBarStyle: "default",
   },
 };
