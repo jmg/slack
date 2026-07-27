@@ -180,8 +180,12 @@ export function ChatMockup() {
         <div className="flex flex-1 flex-col">
           <div className="border-b px-4 py-3 text-sm font-bold text-neutral-800"># general</div>
           <div className="flex-1 space-y-4 overflow-hidden p-4">
-            {messages.map((m) => (
-              <div key={m.name} className="flex gap-2.5">
+            {messages.map((m, i) => (
+              <div
+                key={m.name}
+                className="talk-msg flex gap-2.5"
+                style={{ animationDelay: `${0.7 + i * 0.3}s` }}
+              >
                 <span
                   className="flex size-8 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white"
                   style={{ backgroundColor: m.color }}
@@ -211,7 +215,21 @@ export function ChatMockup() {
               </div>
             ))}
           </div>
-          <div className="m-3 rounded-lg border px-3 py-2 text-sm text-neutral-400">
+          <div className="flex items-center gap-2 px-4 pb-1 text-xs text-neutral-400">
+            <span className="flex gap-1">
+              <span className="talk-dot size-1.5 rounded-full bg-neutral-400" />
+              <span
+                className="talk-dot size-1.5 rounded-full bg-neutral-400"
+                style={{ animationDelay: "0.2s" }}
+              />
+              <span
+                className="talk-dot size-1.5 rounded-full bg-neutral-400"
+                style={{ animationDelay: "0.4s" }}
+              />
+            </span>
+            Grace is typing…
+          </div>
+          <div className="m-3 mt-1 rounded-lg border px-3 py-2 text-sm text-neutral-400">
             Message #general…
           </div>
         </div>

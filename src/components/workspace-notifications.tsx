@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import useSWR from "swr";
 import type { UnreadCounts } from "@/lib/types";
+import { BRAND } from "@/lib/brand";
 
 /**
  * Passive awareness signals for a backgrounded tab. Reads the same unread data
@@ -44,7 +45,7 @@ export function WorkspaceNotifications({
 
   // Tab title badge — mentions take precedence over plain unread.
   useEffect(() => {
-    const base = `${workspaceName} · Slack`;
+    const base = `${workspaceName} · ${BRAND}`;
     document.title =
       unread > 0 ? `(${mentions > 0 ? mentions : unread}) ${base}` : base;
   }, [unread, mentions, workspaceName]);

@@ -140,3 +140,74 @@
 .permalink-flash {
   animation: permalink-flash 2s ease-out;
 }
+
+/* ── Marketing / landing animations (pure CSS, reduced-motion aware) ─────────
+   Same philosophy as the deploycloud landing: no client JS, tasteful, and fully
+   disabled under prefers-reduced-motion. */
+
+/* One-shot entrance for the hero (above the fold, plays on load). Stagger via an
+   inline animation-delay. */
+@keyframes talk-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+.talk-rise {
+  opacity: 0;
+  animation: talk-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Scroll-reveal for below-the-fold sections. Progressive enhancement: only
+   browsers with scroll-driven animations hide-then-reveal; the rest just show
+   the content, so nothing is ever stuck hidden. */
+@supports (animation-timeline: view()) {
+  .talk-reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    animation: talk-rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 20%;
+  }
+}
+
+/* Gentle float on the hero product mockup. */
+@keyframes talk-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+.talk-float { animation: talk-float 7s ease-in-out infinite; }
+
+/* Chat messages "arriving" in the mockup — staggered slide-up on load. */
+@keyframes talk-msg {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.talk-msg { opacity: 0; animation: talk-msg 0.6s ease-out forwards; }
+
+/* Typing-indicator dots. */
+@keyframes talk-typing {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30%           { opacity: 1;    transform: translateY(-3px); }
+}
+.talk-dot { animation: talk-typing 1.3s ease-in-out infinite; }
+
+/* Soft pulsing glow behind the hero. */
+@keyframes talk-glow {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.85; }
+}
+.talk-glow { animation: talk-glow 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .talk-rise,
+  .talk-msg,
+  .talk-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+  .talk-float,
+  .talk-dot,
+  .talk-glow {
+    animation: none;
+  }
+}

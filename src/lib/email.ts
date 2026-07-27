@@ -35,7 +35,7 @@ export async function sendEmail(input: EmailInput): Promise<boolean> {
       personalizations: [{ to: [{ email: input.to }] }],
       // Brand name kept inline (not imported) so the plain-tsx cron that imports
       // this file needs no path-alias resolution. Mirror src/lib/brand.ts.
-      from: { email: from, name: "Hearth" },
+      from: { email: from, name: "Talkaroo" },
       subject: input.subject,
       // SendGrid requires content ordered plain-text first, then HTML.
       content: [

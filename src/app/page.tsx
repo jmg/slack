@@ -178,23 +178,35 @@ export default async function Home() {
       <section className="relative overflow-hidden">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px] bg-linear-to-b from-[#4A154B]/[0.07] via-[#4A154B]/[0.02] to-transparent"
+          className="talk-glow pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px] bg-linear-to-b from-[#4A154B]/[0.07] via-[#4A154B]/[0.02] to-transparent"
         />
         <div className="mx-auto max-w-6xl px-4 pb-10 pt-14 sm:px-6 sm:pt-20">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#4A154B]/15 bg-[#4A154B]/5 px-3 py-1 text-xs font-medium text-[#4A154B]">
+            <span
+              className="talk-rise inline-flex items-center gap-1.5 rounded-full border border-[#4A154B]/15 bg-[#4A154B]/5 px-3 py-1 text-xs font-medium text-[#4A154B]"
+              style={{ animationDelay: "0.05s" }}
+            >
               <Zap className="size-3.5" /> Open team chat · self-hostable
             </span>
-            <h1 className="mt-5 text-balance text-4xl font-extrabold tracking-tight sm:text-6xl">
+            <h1
+              className="talk-rise mt-5 text-balance text-4xl font-extrabold tracking-tight sm:text-6xl"
+              style={{ animationDelay: "0.15s" }}
+            >
               {BRAND_TAGLINE}
             </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-pretty text-lg text-neutral-600">
+            <p
+              className="talk-rise mx-auto mt-5 max-w-2xl text-pretty text-lg text-neutral-600"
+              style={{ animationDelay: "0.25s" }}
+            >
               {BRAND_DESCRIPTION}
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div
+              className="talk-rise mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
+              style={{ animationDelay: "0.35s" }}
+            >
               <Link
                 href="/register"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#4A154B] px-6 py-3 font-semibold text-white shadow-lg shadow-[#4A154B]/20 transition hover:bg-[#611f69] sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#4A154B] px-6 py-3 font-semibold text-white shadow-lg shadow-[#4A154B]/20 transition hover:bg-[#611f69] hover:shadow-xl hover:shadow-[#4A154B]/25 sm:w-auto"
               >
                 Get started free <ArrowRight className="size-4" />
               </Link>
@@ -205,13 +217,21 @@ export default async function Home() {
                 Sign in
               </Link>
             </div>
-            <p className="mt-4 text-sm text-neutral-500">
+            <p
+              className="talk-rise mt-4 text-sm text-neutral-500"
+              style={{ animationDelay: "0.45s" }}
+            >
               No credit card required · Free forever for small teams
             </p>
           </div>
 
-          <div className="mx-auto mt-14 max-w-4xl">
-            <ChatMockup />
+          <div
+            className="talk-rise mx-auto mt-14 max-w-4xl"
+            style={{ animationDelay: "0.55s" }}
+          >
+            <div className="talk-float">
+              <ChatMockup />
+            </div>
           </div>
         </div>
       </section>
