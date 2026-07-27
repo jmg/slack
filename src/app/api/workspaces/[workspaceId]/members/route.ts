@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
-import { requireWorkspaceMember } from "@/lib/data";
+import { autoJoinDefaultChannels, requireWorkspaceMember } from "@/lib/data";
 import { isOnline } from "@/lib/mentions";
 import { addWorkspaceMemberSchema } from "@/lib/validators";
 import { assertSameOrigin } from "@/lib/csrf";
@@ -114,6 +114,7 @@ export async function POST(
     await prisma.workspaceMember.create({
       data: { workspaceId, userId: target.id, role: "MEMBER" },
     });
+    await autoJoinDefaultChannels(target.id, workspaceId);
     recordAudit({
       action: "workspace.member_add",
       actorId: user.id,

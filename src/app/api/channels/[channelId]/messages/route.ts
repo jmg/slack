@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { createMessageSchema } from "@/lib/validators";
-import { requireChannelAccess } from "@/lib/data";
+import { requireChannelAccess, requireChannelPostAccess } from "@/lib/data";
 import { listChannelMessages, messageInclude, serializeMessage } from "@/lib/messages";
 import { claimAttachments } from "@/lib/uploads";
 import { broadcastMessage } from "@/lib/realtime";
@@ -27,7 +27,8 @@ export async function POST(
   return handle(async () => {
     const user = await requireUser();
     const { channelId } = await params;
-    const channel = await requireChannelAccess(user.id, channelId);
+    // Posting requires membership (Slack-style): non-members must Join first.
+    const channel = await requireChannelPostAccess(user.id, channelId);
     if (channel.archivedAt) {
       return apiError("This channel is archived", 403);
     }

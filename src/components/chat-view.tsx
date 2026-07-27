@@ -23,6 +23,7 @@ export function ChatView({
   avatar,
   placeholder,
   channelId,
+  isMember = true,
 }: {
   messagesUrl: string;
   currentUserId: string;
@@ -34,6 +35,9 @@ export function ChatView({
   placeholder: string;
   /** Set for channels (not DMs) — enables the members dialog. */
   channelId?: string;
+  /** Whether the current user has joined this channel. Non-members can read a
+   *  public channel but see a Join bar instead of the composer. DMs pass true. */
+  isMember?: boolean;
 }) {
   // No polling: the workspace SSE stream revalidates this key the instant a
   // message lands, is edited/deleted, or gets a reaction (see useWorkspaceEvents).
@@ -47,6 +51,31 @@ export function ChatView({
   const [threadId, setThreadId] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
   const { mutate: globalMutate } = useSWRConfig();
+
+  // Channel membership: non-members can read a public channel but must join to
+  // post (Slack-style). Seeded from the server prop; flips optimistically on join.
+  const [joined, setJoined] = useState(isMember);
+  const [joining, setJoining] = useState(false);
+  useEffect(() => setJoined(isMember), [isMember]);
+
+  async function joinChannel() {
+    if (!channelId || joining) return;
+    setJoining(true);
+    try {
+      const res = await fetch(`/api/channels/${channelId}/join`, { method: "POST" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error ?? "Could not join the channel");
+      }
+      setJoined(true);
+      if (workspaceId) void globalMutate(`/api/workspaces/${workspaceId}/unread`);
+      void globalMutate(`/api/channels/${channelId}/members`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not join the channel");
+    } finally {
+      setJoining(false);
+    }
+  }
 
   // Viewing a channel/DM marks it read — on open and as new messages land —
   // then refreshes the sidebar's unread badges.
@@ -212,12 +241,30 @@ export function ChatView({
           }
         />
 
-        <MessageComposer
-          placeholder={placeholder}
-          onSend={sendMessage}
-          workspaceId={workspaceId}
-          draftKey={messagesUrl}
-        />
+        {channelId && !joined ? (
+          <div className="flex shrink-0 flex-col items-center gap-2 border-t bg-muted/30 px-4 py-4 text-center sm:flex-row sm:justify-between sm:text-left">
+            <p className="text-sm text-muted-foreground">
+              You&apos;re viewing{" "}
+              <span className="font-semibold text-foreground">#{title}</span>.
+              Join to send messages.
+            </p>
+            <button
+              type="button"
+              onClick={joinChannel}
+              disabled={joining}
+              className="shrink-0 rounded-md bg-[#007a5a] px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-[#148567] disabled:opacity-60"
+            >
+              {joining ? "Joining…" : "Join channel"}
+            </button>
+          </div>
+        ) : (
+          <MessageComposer
+            placeholder={placeholder}
+            onSend={sendMessage}
+            workspaceId={workspaceId}
+            draftKey={messagesUrl}
+          />
+        )}
       </div>
 
       {channelId && (

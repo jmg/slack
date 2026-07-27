@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { recordAudit } from "@/lib/audit";
+import { autoJoinDefaultChannels } from "@/lib/data";
 
 /** Join the workspace behind an invite token. Requires being signed in. */
 export async function POST(
@@ -28,6 +29,7 @@ export async function POST(
       update: {},
       create: { workspaceId: invite.workspaceId, userId: user.id, role: "MEMBER" },
     });
+    await autoJoinDefaultChannels(user.id, invite.workspaceId);
     recordAudit({
       action: "invite.accept",
       actorId: user.id,

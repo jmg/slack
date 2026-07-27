@@ -19,11 +19,10 @@ export async function GET(
     await requireWorkspaceMember(user.id, workspaceId);
 
     const [channels, conversations, readStates] = await Promise.all([
+      // Only channels the user has joined get unread/mention badges — matching
+      // the "join to participate" model. Unjoined public channels stay quiet.
       prisma.channel.findMany({
-        where: {
-          workspaceId,
-          OR: [{ isPrivate: false }, { members: { some: { userId: user.id } } }],
-        },
+        where: { workspaceId, members: { some: { userId: user.id } } },
         select: { id: true },
       }),
       prisma.conversation.findMany({

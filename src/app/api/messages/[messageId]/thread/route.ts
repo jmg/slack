@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { createMessageSchema } from "@/lib/validators";
-import { requireMessageAccess } from "@/lib/data";
+import { requireMessageAccess, requireChannelPostAccess } from "@/lib/data";
 import {
   listThreadReplies,
   messageInclude,
@@ -43,6 +43,11 @@ export async function POST(
     // Replies always attach to the top-level message, never to another reply.
     if (parent.parentId) {
       return apiError("Cannot reply to a reply", 400);
+    }
+    // Replying in a channel thread requires channel membership, same as posting
+    // top-level. DM threads are gated by conversation membership already.
+    if (parent.channelId) {
+      await requireChannelPostAccess(user.id, parent.channelId);
     }
 
     const json = await req.json().catch(() => null);
