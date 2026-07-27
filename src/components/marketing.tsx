@@ -5,14 +5,14 @@ function Logo({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 font-bold ${className}`}>
       <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden className="rounded-md">
-        <rect width="32" height="32" rx="7" fill="#4A154B" />
+        <rect width="32" height="32" rx="7" fill="#7c3aed" />
         <path
           d="M8 12.5C8 9.462 10.462 7 13.5 7h5C21.538 7 24 9.462 24 12.5S21.538 18 18.5 18H14l-4 3.5c-.66.577-1.5.106-1.5-.66V18.2A5.5 5.5 0 0 1 8 14.5z"
           fill="#fff"
         />
-        <circle cx="13" cy="12.5" r="1.4" fill="#4A154B" />
-        <circle cx="16.5" cy="12.5" r="1.4" fill="#4A154B" />
-        <circle cx="20" cy="12.5" r="1.4" fill="#4A154B" />
+        <circle cx="13" cy="12.5" r="1.4" fill="#7c3aed" />
+        <circle cx="16.5" cy="12.5" r="1.4" fill="#7c3aed" />
+        <circle cx="20" cy="12.5" r="1.4" fill="#7c3aed" />
       </svg>
       <span>{BRAND}</span>
     </span>
@@ -49,7 +49,7 @@ export function MarketingHeader() {
           </Link>
           <Link
             href="/register"
-            className="rounded-lg bg-[#4A154B] px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-[#611f69]"
+            className="rounded-lg bg-[#7c3aed] px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-[#6d28d9]"
           >
             Get started
           </Link>
@@ -126,7 +126,7 @@ export function ChatMockup() {
   const messages = [
     {
       name: "Ada L.",
-      color: "#4A154B",
+      color: "#7c3aed",
       time: "9:41",
       text: "Landing page is live 🎉 pushed the new hero this morning.",
     },
@@ -153,7 +153,7 @@ export function ChatMockup() {
       </div>
       <div className="flex h-[360px]">
         {/* sidebar */}
-        <div className="hidden w-44 shrink-0 flex-col bg-[#3f0e40] p-3 text-sm text-white/80 sm:flex">
+        <div className="hidden w-44 shrink-0 flex-col bg-[#4c1d95] p-3 text-sm text-white/80 sm:flex">
           <p className="mb-3 font-bold text-white">Acme Inc</p>
           <p className="mb-2 text-xs uppercase tracking-wide text-white/40">Channels</p>
           <div className="space-y-0.5">

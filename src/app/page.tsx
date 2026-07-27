@@ -178,12 +178,12 @@ export default async function Home() {
       <section className="relative overflow-hidden">
         <div
           aria-hidden
-          className="talk-glow pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px] bg-linear-to-b from-[#4A154B]/[0.07] via-[#4A154B]/[0.02] to-transparent"
+          className="talk-glow pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px] bg-linear-to-b from-[#7c3aed]/[0.07] via-[#7c3aed]/[0.02] to-transparent"
         />
         <div className="mx-auto max-w-6xl px-4 pb-10 pt-14 sm:px-6 sm:pt-20">
           <div className="mx-auto max-w-3xl text-center">
             <span
-              className="talk-rise inline-flex items-center gap-1.5 rounded-full border border-[#4A154B]/15 bg-[#4A154B]/5 px-3 py-1 text-xs font-medium text-[#4A154B]"
+              className="talk-rise inline-flex items-center gap-1.5 rounded-full border border-[#7c3aed]/15 bg-[#7c3aed]/5 px-3 py-1 text-xs font-medium text-[#7c3aed]"
               style={{ animationDelay: "0.05s" }}
             >
               <Zap className="size-3.5" /> Open team chat · self-hostable
@@ -206,7 +206,7 @@ export default async function Home() {
             >
               <Link
                 href="/register"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#4A154B] px-6 py-3 font-semibold text-white shadow-lg shadow-[#4A154B]/20 transition hover:bg-[#611f69] hover:shadow-xl hover:shadow-[#4A154B]/25 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#7c3aed] px-6 py-3 font-semibold text-white shadow-lg shadow-[#7c3aed]/20 transition hover:bg-[#6d28d9] hover:shadow-xl hover:shadow-[#7c3aed]/25 sm:w-auto"
               >
                 Get started free <ArrowRight className="size-4" />
               </Link>
@@ -246,7 +246,7 @@ export default async function Home() {
             { k: "Secure", v: "Roles & audit log" },
           ].map((s) => (
             <div key={s.k}>
-              <p className="text-lg font-bold text-[#4A154B]">{s.k}</p>
+              <p className="text-lg font-bold text-[#7c3aed]">{s.k}</p>
               <p className="text-sm text-neutral-500">{s.v}</p>
             </div>
           ))}
@@ -267,9 +267,9 @@ export default async function Home() {
           {FEATURES.map((f) => (
             <div
               key={f.title}
-              className="group rounded-2xl border bg-white p-6 transition hover:border-[#4A154B]/30 hover:shadow-lg"
+              className="group rounded-2xl border bg-white p-6 transition hover:border-[#7c3aed]/30 hover:shadow-lg"
             >
-              <span className="flex size-11 items-center justify-center rounded-xl bg-[#4A154B]/10 text-[#4A154B]">
+              <span className="flex size-11 items-center justify-center rounded-xl bg-[#7c3aed]/10 text-[#7c3aed]">
                 <f.icon className="size-5" />
               </span>
               <h3 className="mt-4 text-lg font-semibold">{f.title}</h3>
@@ -290,7 +290,7 @@ export default async function Home() {
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {STEPS.map((s) => (
               <div key={s.n} className="rounded-2xl border bg-white p-6">
-                <span className="flex size-9 items-center justify-center rounded-full bg-[#4A154B] text-sm font-bold text-white">
+                <span className="flex size-9 items-center justify-center rounded-full bg-[#7c3aed] text-sm font-bold text-white">
                   {s.n}
                 </span>
                 <h3 className="mt-4 text-lg font-semibold">{s.title}</h3>
@@ -318,12 +318,12 @@ export default async function Home() {
               className={
                 "relative flex flex-col rounded-2xl border p-6 " +
                 (p.highlight
-                  ? "border-[#4A154B] shadow-xl ring-1 ring-[#4A154B]"
+                  ? "border-[#7c3aed] shadow-xl ring-1 ring-[#7c3aed]"
                   : "bg-white")
               }
             >
               {p.highlight && (
-                <span className="absolute -top-3 left-6 rounded-full bg-[#4A154B] px-3 py-1 text-xs font-semibold text-white">
+                <span className="absolute -top-3 left-6 rounded-full bg-[#7c3aed] px-3 py-1 text-xs font-semibold text-white">
                   Most popular
                 </span>
               )}
@@ -346,7 +346,7 @@ export default async function Home() {
                 className={
                   "mt-6 inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition " +
                   (p.highlight
-                    ? "bg-[#4A154B] text-white hover:bg-[#611f69]"
+                    ? "bg-[#7c3aed] text-white hover:bg-[#6d28d9]"
                     : "border hover:bg-neutral-50")
                 }
               >
@@ -371,7 +371,7 @@ export default async function Home() {
             </div>
             <Link
               href="/blog"
-              className="hidden shrink-0 text-sm font-semibold text-[#4A154B] hover:underline sm:block"
+              className="hidden shrink-0 text-sm font-semibold text-[#7c3aed] hover:underline sm:block"
             >
               All posts →
             </Link>
@@ -391,13 +391,13 @@ export default async function Home() {
                   })}{" "}
                   · {p.readingMinutes} min read
                 </p>
-                <h3 className="mt-2 font-semibold leading-snug group-hover:text-[#4A154B]">
+                <h3 className="mt-2 font-semibold leading-snug group-hover:text-[#7c3aed]">
                   {p.title}
                 </h3>
                 <p className="mt-1.5 line-clamp-3 text-sm text-neutral-600">
                   {p.description}
                 </p>
-                <span className="mt-3 text-sm font-medium text-[#4A154B]">Read →</span>
+                <span className="mt-3 text-sm font-medium text-[#7c3aed]">Read →</span>
               </Link>
             ))}
           </div>
@@ -426,7 +426,7 @@ export default async function Home() {
 
       {/* Final CTA */}
       <section className="mx-auto mb-16 w-full max-w-6xl px-4 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl bg-[#4A154B] px-6 py-14 text-center text-white sm:py-20">
+        <div className="relative overflow-hidden rounded-3xl bg-[#7c3aed] px-6 py-14 text-center text-white sm:py-20">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 opacity-20 [background:radial-gradient(600px_circle_at_50%_-20%,#fff,transparent)]"
@@ -440,7 +440,7 @@ export default async function Home() {
           </p>
           <Link
             href="/register"
-            className="relative mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-[#4A154B] transition hover:bg-white/90"
+            className="relative mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-[#7c3aed] transition hover:bg-white/90"
           >
             Get started free <ArrowRight className="size-4" />
           </Link>
