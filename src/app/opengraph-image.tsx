@@ -2,7 +2,9 @@ import { ImageResponse } from "next/og";
 import { BRAND, BRAND_TAGLINE, BRAND_DOMAIN } from "@/lib/brand";
 import { TEAM_PRICE_USD } from "@/lib/plans";
 
-export const runtime = "edge";
+// nodejs (not edge): ImageResponse's font/WASM loading fails under the edge
+// runtime emulation on a self-hosted `next start` server (502s). nodejs is fine.
+export const runtime = "nodejs";
 export const alt = `${BRAND} — ${BRAND_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
