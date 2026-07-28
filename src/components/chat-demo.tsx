@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import {
   Hash,
   Lock,
@@ -12,6 +12,7 @@ import {
   ImageIcon,
   FileText,
   X,
+  Pin,
 } from "lucide-react";
 
 type Reaction = { emoji: string; count: number; mine?: boolean };
@@ -102,6 +103,10 @@ export function ChatDemo() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [thread, setThread] = useState(false);
   const [fading, setFading] = useState(false);
+  const [alanOnline, setAlanOnline] = useState(false);
+  const [engUnread, setEngUnread] = useState(3);
+  const [newLine, setNewLine] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     const reduced =
@@ -118,16 +123,16 @@ export function ChatDemo() {
       );
 
     if (reduced) {
-      const t = setTimeout(
-        () =>
-          setMessages([
-            ...seed(),
-            { ...GRACE_MSG, reactions: [{ emoji: "✅", count: 1, mine: true }] },
-            { id: "a2", ...ADA, time: "9:46", text: DRAFT_TEXT + EDIT_SUFFIX, edited: true },
-            ALAN_MSG,
-          ]),
-        0,
-      );
+      const t = setTimeout(() => {
+        setAlanOnline(true);
+        setNewLine(true);
+        setMessages([
+          ...seed(),
+          { ...GRACE_MSG, reactions: [{ emoji: "✅", count: 1, mine: true }] },
+          { id: "a2", ...ADA, time: "9:46", text: DRAFT_TEXT + EDIT_SUFFIX, edited: true },
+          ALAN_MSG,
+        ]);
+      }, 0);
       return () => clearTimeout(t);
     }
 
@@ -145,6 +150,10 @@ export function ChatDemo() {
       setSearch("");
       setSearchOpen(false);
       setThread(false);
+      setAlanOnline(false);
+      setEngUnread(3);
+      setNewLine(false);
+      setToast(null);
       setMessages(seed());
 
       // 1. Search the workspace from the top bar.
@@ -161,6 +170,7 @@ export function ChatDemo() {
       at(2100, () => setTyping("Grace Hopper"));
       at(3300, () => {
         setTyping(null);
+        setNewLine(true);
         setMessages((m) => [...m, GRACE_MSG]);
       });
       // 3. Hover toolbar → emoji picker → reaction lands.
@@ -182,6 +192,12 @@ export function ChatDemo() {
         setMessages((m) => [...m, { id: "a2", ...ADA, time: "9:46", text: DRAFT_TEXT }]);
       });
       at(sentAt + 600, () => react("a2", "🔥"));
+      // A notification arrives from another channel (badge ticks up + a toast).
+      at(sentAt + 900, () => {
+        setEngUnread(4);
+        setToast("#engineering · Grace: build passed ✅");
+      });
+      at(sentAt + 3200, () => setToast(null));
       // 5. Edit that message.
       at(sentAt + 1400, () =>
         setMessages((m) =>
@@ -189,7 +205,8 @@ export function ChatDemo() {
         ),
       );
 
-      // 6. Alan replies with formatting + a file, then reacts.
+      // 6. Alan comes online, then replies with formatting + a file, then reacts.
+      at(sentAt + 2000, () => setAlanOnline(true));
       at(sentAt + 2200, () => setTyping("Alan Turing"));
       at(sentAt + 3400, () => {
         setTyping(null);
@@ -212,7 +229,14 @@ export function ChatDemo() {
   }, []);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl">
+    <div className="relative overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl">
+      {/* notification toast */}
+      {toast && (
+        <div className="talk-pop absolute bottom-4 right-4 z-40 flex items-center gap-2 rounded-lg bg-neutral-900 px-3 py-2 text-xs text-white shadow-xl">
+          <Bell className="size-3.5 text-[#c4b5fd]" />
+          {toast}
+        </div>
+      )}
       {/* window bar + search */}
       <div className="relative flex items-center gap-1.5 border-b bg-neutral-50 px-4 py-3">
         <span className="size-3 rounded-full bg-[#ff5f57]" />
@@ -254,10 +278,10 @@ export function ChatDemo() {
             <p className="flex items-center gap-1.5 rounded bg-white/15 px-2 py-1 font-semibold text-white">
               <Hash className="size-3.5" /> general
             </p>
-            <p className="flex items-center gap-1.5 px-2 py-1">
+            <p className="flex items-center gap-1.5 px-2 py-1 font-medium text-white">
               <Hash className="size-3.5 opacity-60" /> engineering
-              <span className="ml-auto rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                3
+              <span className="talk-pop ml-auto rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white" key={engUnread}>
+                {engUnread}
               </span>
             </p>
             <p className="flex items-center gap-1.5 px-2 py-1">
@@ -275,17 +299,30 @@ export function ChatDemo() {
               <span className="size-2 rounded-full bg-green-400" /> Grace Hopper
             </p>
             <p className="flex items-center gap-2 px-2 py-1">
-              <span className="size-2 rounded-full border border-white/40" /> Alan Turing
+              <span
+                className={
+                  alanOnline
+                    ? "talk-pop size-2 rounded-full bg-green-400"
+                    : "size-2 rounded-full border border-white/40"
+                }
+              />{" "}
+              Alan Turing
             </p>
           </div>
         </div>
 
         {/* channel */}
         <div className="relative flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center gap-2 border-b px-4 py-3">
+          <div className="flex items-center gap-2 border-b px-4 py-2.5">
             <Hash className="size-4 text-neutral-400" />
             <span className="text-sm font-bold text-neutral-800">general</span>
-            <span className="ml-auto text-xs text-neutral-400">3 members</span>
+            <span className="hidden truncate text-xs text-neutral-400 sm:inline">
+              | Company-wide announcements
+            </span>
+            <span className="ml-auto flex items-center gap-1 text-xs text-neutral-400">
+              <Pin className="size-3" /> 1
+            </span>
+            <span className="text-xs text-neutral-400">· 3</span>
           </div>
 
           <div
@@ -294,7 +331,14 @@ export function ChatDemo() {
             }`}
           >
             {messages.map((m, i) => (
-              <div key={m.id} className={`group relative flex gap-2.5 ${i < 2 ? "" : "talk-msg"}`}>
+              <Fragment key={m.id}>
+                {i === 2 && newLine && (
+                  <div className="talk-pop -mb-1 flex items-center gap-2 text-[11px] font-semibold text-red-500">
+                    <span className="h-px flex-1 bg-red-200" /> New
+                    <span className="h-px flex-1 bg-red-200" />
+                  </div>
+                )}
+                <div className={`group relative flex gap-2.5 ${i < 2 ? "" : "talk-msg"}`}>
                 {hover === m.id && (
                   <div className="talk-pop absolute -top-3 right-2 z-10 flex items-center gap-0.5 rounded-md border bg-white px-1 py-0.5 shadow-sm">
                     <SmilePlus className="size-3.5 text-neutral-400" />
@@ -382,7 +426,8 @@ export function ChatDemo() {
                     </button>
                   )}
                 </div>
-              </div>
+                </div>
+              </Fragment>
             ))}
           </div>
 
