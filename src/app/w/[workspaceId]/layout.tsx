@@ -98,7 +98,6 @@ export default async function WorkspaceLayout({
         workspaceName={membership.workspace.name}
       />
       <WorkspaceShell
-        workspaceName={membership.workspace.name}
         rail={<WorkspaceRail workspaces={workspaces} activeId={workspaceId} />}
         sidebar={
           <WorkspaceSidebar

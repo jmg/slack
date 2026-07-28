@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { toast } from "sonner";
-import { Hash, Lock, Users } from "lucide-react";
+import { Hash, Lock, Users, Menu } from "lucide-react";
+import { useOpenSidebar } from "@/components/workspace-shell";
 import { UserAvatar } from "@/components/user-avatar";
 import { MessageList } from "@/components/message-list";
 import { MessageComposer } from "@/components/message-composer";
@@ -41,6 +42,7 @@ export function ChatView({
 }) {
   // No polling: the workspace SSE stream revalidates this key the instant a
   // message lands, is edited/deleted, or gets a reaction (see useWorkspaceEvents).
+  const openSidebar = useOpenSidebar();
   const { data: messages = [], mutate } = useSWR<SerializedMessage[]>(messagesUrl);
   // Member names power full-name @mention highlighting in the timeline. SWR
   // dedupes this with the composer's identical request, so it's not a 2nd fetch.
@@ -191,6 +193,14 @@ export function ChatView({
     <div className="flex h-full">
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          <button
+            type="button"
+            onClick={openSidebar}
+            aria-label="Open menu"
+            className="-ml-1.5 flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground md:hidden"
+          >
+            <Menu className="size-5" />
+          </button>
           {iconType === "dm" && avatar ? (
             <UserAvatar name={avatar.name} image={avatar.image} className="size-6" />
           ) : iconType === "lock" ? (
