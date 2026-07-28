@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { autoJoinDefaultChannels, requireWorkspaceMember } from "@/lib/data";
+import { canAddMember } from "@/lib/billing";
+import { FREE_MEMBER_LIMIT } from "@/lib/plans";
 import { isOnline } from "@/lib/mentions";
 import { addWorkspaceMemberSchema } from "@/lib/validators";
 import { assertSameOrigin } from "@/lib/csrf";
@@ -69,6 +71,12 @@ export async function POST(
     const membership = await requireWorkspaceMember(user.id, workspaceId);
     if (membership.role !== "ADMIN") {
       return apiError("Only a workspace admin can add people", 403);
+    }
+    if (!(await canAddMember(workspaceId))) {
+      return apiError(
+        `The Free plan is limited to ${FREE_MEMBER_LIMIT} members. Upgrade to Team in Settings to add more.`,
+        402,
+      );
     }
 
     const json = await req.json().catch(() => null);

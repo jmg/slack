@@ -63,6 +63,16 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// Billing (Stripe). "free" or "team". The subscription is per workspace,
+  /// quantity = seats (member count). See src/lib/billing.ts + the webhook.
+  plan                 String    @default("free")
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  /// Stripe subscription status (active, trialing, past_due, canceled, …).
+  subscriptionStatus   String?
+  /// End of the current paid period; the plan stays "team" until then.
+  currentPeriodEnd     DateTime?
+
   owner         User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
   members       WorkspaceMember[]
   channels      Channel[]

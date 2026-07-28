@@ -16,6 +16,7 @@ import { MarketingHeader, MarketingFooter } from "@/components/marketing";
 import { ChatDemo } from "@/components/chat-demo";
 import { posts } from "@/content/posts";
 import { BRAND, BRAND_DOMAIN, BRAND_TAGLINE, BRAND_DESCRIPTION } from "@/lib/brand";
+import { TEAM_PRICE_USD, FREE_MEMBER_LIMIT } from "@/lib/plans";
 
 const SITE_URL =
   process.env.APP_BASE_URL?.replace(/\/+$/, "") ?? `https://${BRAND_DOMAIN}`;
@@ -76,36 +77,39 @@ const PLANS = [
     name: "Free",
     price: "$0",
     cadence: "forever",
+    note: "",
     blurb: "Everything a small team needs to start talking.",
     cta: "Get started free",
     href: "/register",
     highlight: false,
     features: [
+      `Up to ${FREE_MEMBER_LIMIT} members`,
       "Unlimited public & private channels",
-      "Threads, DMs & group messages",
-      "Mentions, search & file sharing",
-      "Email notifications",
+      "Threads, DMs, mentions & search",
+      "File sharing & email notifications",
     ],
   },
   {
     name: "Team",
-    price: "Custom",
-    cadence: "get in touch",
-    blurb: "For organizations that want admin control and support.",
-    cta: "Contact us",
+    price: `$${TEAM_PRICE_USD}`,
+    cadence: "member / month",
+    note: "A fraction of what Slack or Teams charge per user",
+    blurb: "Unlimited members, admin controls and priority support.",
+    cta: "Get started",
     href: "/register",
     highlight: true,
     features: [
       "Everything in Free",
+      "Unlimited members",
       "Roles, admin controls & audit log",
-      "Priority support",
-      "Onboarding help",
+      "Priority support & onboarding",
     ],
   },
   {
     name: "Self-host",
     price: "Free",
     cadence: "open",
+    note: "",
     blurb: "Run it on your own infrastructure and own your data.",
     cta: "Read the docs",
     href: "/blog/why-open-team-chat",
@@ -309,7 +313,8 @@ export default async function Home() {
             Simple, honest pricing
           </h2>
           <p className="mt-3 text-neutral-600">
-            Start free. Grow when you&rsquo;re ready. Or run it yourself.
+            Start free. Scale for just ${TEAM_PRICE_USD}/member — a fraction of what
+            Slack or Teams charge. Or run it yourself.
           </p>
         </div>
         <div className="mt-12 grid gap-6 lg:grid-cols-3">
@@ -333,6 +338,7 @@ export default async function Home() {
                 <span className="text-4xl font-extrabold tracking-tight">{p.price}</span>
                 <span className="text-sm text-neutral-500">/ {p.cadence}</span>
               </div>
+              {p.note && <p className="mt-1 text-xs font-medium text-[#007a5a]">{p.note}</p>}
               <p className="mt-2 text-sm text-neutral-600">{p.blurb}</p>
               <ul className="mt-5 flex-1 space-y-2.5 text-sm">
                 {p.features.map((f) => (

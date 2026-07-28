@@ -1,11 +1,20 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Mail, ScrollText, Shield, UserMinus } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Mail,
+  ScrollText,
+  Shield,
+  UserMinus,
+  Sparkles,
+  CreditCard,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +57,14 @@ export function SettingsView({
   userImage: string | null;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const b = searchParams.get("billing");
+    if (b === "success") toast.success("You're on the Team plan 🎉 thanks!");
+    else if (b === "cancel") toast.info("Checkout canceled — no charge was made.");
+    if (b) window.history.replaceState(null, "", `/w/${workspaceId}/settings`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const fileRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(userImage);
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -309,6 +326,8 @@ export function SettingsView({
           </label>
         </section>
 
+        <BillingSection workspaceId={workspaceId} isAdmin={isAdmin} />
+
         {isAdmin && <MembersSection workspaceId={workspaceId} />}
 
         {isAdmin && <AuditSection workspaceId={workspaceId} />}
@@ -334,6 +353,99 @@ export function SettingsView({
         </section>
       </div>
     </div>
+  );
+}
+
+type BillingInfo = {
+  plan: "free" | "team";
+  status: string | null;
+  currentPeriodEnd: string | null;
+  seats: number;
+  pricePerSeat: number;
+  monthlyTotal: number;
+  freeLimit: number;
+  configured: boolean;
+  isAdmin: boolean;
+  hasCustomer: boolean;
+};
+
+/** Plan + upgrade/manage. Visible to everyone; buttons are admin-only. */
+function BillingSection({ workspaceId, isAdmin }: { workspaceId: string; isAdmin: boolean }) {
+  const { data } = useSWR<BillingInfo>(`/api/workspaces/${workspaceId}/billing`);
+  const [busy, setBusy] = useState(false);
+
+  async function go(action: "checkout" | "portal") {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/billing/${action}`, {
+        method: "POST",
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error ?? "Something went wrong");
+      if (d.url) window.location.href = d.url;
+      else setBusy(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(false);
+    }
+  }
+
+  const team = data?.plan === "team";
+  return (
+    <section className="mt-6 rounded-lg border p-5">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <CreditCard className="size-4" /> Billing
+      </h2>
+      {!data ? (
+        <p className="mt-3 text-sm text-muted-foreground">Loading…</p>
+      ) : !data.configured ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Billing isn&apos;t set up on this instance.
+        </p>
+      ) : (
+        <div className="mt-4">
+          <p className="flex items-center gap-2 text-sm font-medium">
+            {team ? (
+              <>
+                Team plan
+                <span className="rounded-full bg-[#007a5a]/10 px-2 py-0.5 text-xs font-semibold text-[#007a5a]">
+                  {data.status ?? "active"}
+                </span>
+              </>
+            ) : (
+              "Free plan"
+            )}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {team
+              ? `$${data.pricePerSeat}/member · ${data.seats} members · about $${data.monthlyTotal}/mo`
+              : `${data.seats} of ${data.freeLimit} members used — upgrade for unlimited members, roles & priority support`}
+          </p>
+
+          {isAdmin ? (
+            <div className="mt-4">
+              {team ? (
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => go("portal")}>
+                  {busy ? "Opening…" : "Manage billing"}
+                </Button>
+              ) : (
+                <Button size="sm" disabled={busy} onClick={() => go("checkout")}>
+                  <Sparkles className="size-4" />{" "}
+                  {busy ? "Redirecting…" : `Upgrade to Team — $${data.pricePerSeat}/member/mo`}
+                </Button>
+              )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                Billed monthly per member. Cancel anytime.
+              </p>
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Ask a workspace admin to change the plan.
+            </p>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

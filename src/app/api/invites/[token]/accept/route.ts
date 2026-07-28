@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { recordAudit } from "@/lib/audit";
 import { autoJoinDefaultChannels } from "@/lib/data";
+import { canAddMember } from "@/lib/billing";
+import { FREE_MEMBER_LIMIT } from "@/lib/plans";
 
 /** Join the workspace behind an invite token. Requires being signed in. */
 export async function POST(
@@ -22,6 +24,16 @@ export async function POST(
     }
 
     // Idempotent: opening the link again (or already being a member) is fine.
+    const already = await prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: invite.workspaceId, userId: user.id } },
+      select: { id: true },
+    });
+    if (!already && !(await canAddMember(invite.workspaceId))) {
+      return apiError(
+        `This workspace is at the Free plan's ${FREE_MEMBER_LIMIT}-member limit. Ask an admin to upgrade to Team.`,
+        402,
+      );
+    }
     await prisma.workspaceMember.upsert({
       where: {
         workspaceId_userId: { workspaceId: invite.workspaceId, userId: user.id },
