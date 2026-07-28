@@ -18,25 +18,43 @@ export function isChunkLoadError(error: unknown): boolean {
   );
 }
 
-/**
- * Reload once to recover from a stale-bundle error, rate-limited so a genuinely
- * broken deploy can't put the tab in a reload loop (at most one reload per
- * window; after that we fall through to the visible error UI).
- */
-export function recoverFromChunkError(windowMs = 10_000): boolean {
-  if (typeof window === "undefined") return false;
+const RELOAD_PARAM = "__reload";
+const MAX_RELOADS = 2;
+
+/** Best-effort: drop any service worker + caches so a stale build can't keep
+ *  being served from the client side. Never throws. */
+async function purgeClientState(): Promise<void> {
   try {
-    const KEY = "slack:lastChunkReload";
-    const last = Number(sessionStorage.getItem(KEY) || 0);
-    if (Date.now() - last > windowMs) {
-      sessionStorage.setItem(KEY, String(Date.now()));
-      window.location.reload();
-      return true;
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
     }
   } catch {
-    // sessionStorage blocked (private mode / iframe) — reload once anyway.
-    window.location.reload();
-    return true;
+    /* ignore */
   }
-  return false;
+  try {
+    if (typeof caches !== "undefined") {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Recover from a stale-bundle / hydration error by purging client state and
+ * reloading — but at most MAX_RELOADS times, tracked via a URL query param so
+ * the guard survives the reload WITHOUT needing sessionStorage (which Brave and
+ * private modes can block, and which previously caused an infinite reload loop).
+ * Once the cap is hit we return false and let the visible error UI show instead.
+ */
+export function recoverFromChunkError(): boolean {
+  if (typeof window === "undefined") return false;
+  const url = new URL(window.location.href);
+  const attempts = Number(url.searchParams.get(RELOAD_PARAM) || 0);
+  if (!Number.isFinite(attempts) || attempts >= MAX_RELOADS) return false;
+  url.searchParams.set(RELOAD_PARAM, String(attempts + 1));
+  void purgeClientState().finally(() => window.location.replace(url.toString()));
+  return true;
 }
