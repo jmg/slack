@@ -372,6 +372,32 @@ export default async function Home() {
             </tbody>
           </table>
         </div>
+        {/* Savings */}
+        <div className="mt-8 rounded-2xl bg-[#7c3aed]/[0.04] p-6 sm:p-8">
+          <p className="text-center text-sm font-semibold text-neutral-500">
+            What your team saves in a year
+          </p>
+          <div className="mt-5 grid grid-cols-3 gap-4">
+            {[10, 25, 50].map((size) => {
+              const save = (7.25 - TEAM_PRICE_USD) * 12 * size;
+              return (
+                <div key={size} className="text-center">
+                  <p className="text-2xl font-extrabold tracking-tight text-[#7c3aed] sm:text-3xl">
+                    ${save.toLocaleString("en-US")}
+                  </p>
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    team of {size}
+                    <span className="hidden sm:inline"> / year</span>
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-4 text-center text-xs text-neutral-400">
+            ${TEAM_PRICE_USD}/user vs Slack Pro at $7.25/user, billed monthly.
+          </p>
+        </div>
+
         <p className="mt-3 text-center text-xs text-neutral-400">
           Slack plan names and prices are their own, shown for comparison and current
           as of publication. Not affiliated with Slack Technologies.
