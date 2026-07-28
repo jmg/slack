@@ -8,6 +8,7 @@ import {
   broadcastChannelUpdated,
 } from "@/lib/realtime";
 import { recordAudit } from "@/lib/audit";
+import { assertSameOrigin } from "@/lib/csrf";
 
 const patchSchema = z
   .object({
@@ -35,6 +36,7 @@ export async function PATCH(
   { params }: { params: Promise<{ channelId: string }> },
 ) {
   return handle(async () => {
+    assertSameOrigin(req);
     const user = await requireUser();
     const { channelId } = await params;
     const channel = await requireChannelManager(user.id, channelId);
@@ -69,10 +71,11 @@ export async function PATCH(
 
 /** Permanently delete a channel and its messages. Creator or workspace ADMIN. */
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ channelId: string }> },
 ) {
   return handle(async () => {
+    assertSameOrigin(req);
     const user = await requireUser();
     const { channelId } = await params;
     const channel = await requireChannelManager(user.id, channelId);

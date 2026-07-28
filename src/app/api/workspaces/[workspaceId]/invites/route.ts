@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { requireWorkspaceMember } from "@/lib/data";
 import { getOrCreateInvite } from "@/lib/invites";
+import { assertSameOrigin } from "@/lib/csrf";
 
 /**
  * Get (or create) the workspace's active invite link. ADMINs only. Pass
@@ -13,6 +14,7 @@ export async function POST(
   { params }: { params: Promise<{ workspaceId: string }> },
 ) {
   return handle(async () => {
+    assertSameOrigin(req);
     const user = await requireUser();
     const { workspaceId } = await params;
     const membership = await requireWorkspaceMember(user.id, workspaceId);

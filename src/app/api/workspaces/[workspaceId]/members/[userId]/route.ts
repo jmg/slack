@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError, apiError, handle, requireUser } from "@/lib/api";
 import { requireWorkspaceMember } from "@/lib/data";
@@ -15,8 +16,28 @@ async function requireAdmin(actorId: string, workspaceId: string) {
   }
 }
 
-async function adminCount(workspaceId: string) {
-  return prisma.workspaceMember.count({ where: { workspaceId, role: "ADMIN" } });
+/**
+ * Run `mutate` only if the workspace keeps at least one admin, atomically. The
+ * count-then-write happens in a SERIALIZABLE transaction so two concurrent
+ * demote/remove requests can't both pass a stale count and strand the workspace
+ * with zero admins — Postgres aborts one of them (it surfaces as a 500 on the
+ * rare conflict, never a lockout).
+ */
+async function withLastAdminGuard(
+  workspaceId: string,
+  message: string,
+  mutate: (tx: Prisma.TransactionClient) => Promise<void>,
+): Promise<void> {
+  await prisma.$transaction(
+    async (tx) => {
+      const admins = await tx.workspaceMember.count({
+        where: { workspaceId, role: "ADMIN" },
+      });
+      if (admins <= 1) throw new ApiError(message, 400);
+      await mutate(tx);
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
 }
 
 /** Change a member's role (promote to admin / demote to member). Admin only. */
@@ -39,15 +60,18 @@ export async function PATCH(
     });
     if (!target) return apiError("That person isn't in this workspace", 404);
 
-    // Never leave a workspace with zero admins.
-    if (target.role === "ADMIN" && role === "MEMBER" && (await adminCount(workspaceId)) <= 1) {
-      return apiError("A workspace needs at least one admin", 400);
-    }
+    const update = (tx: Prisma.TransactionClient) =>
+      tx.workspaceMember
+        .update({ where: { workspaceId_userId: { workspaceId, userId } }, data: { role } })
+        .then(() => undefined);
 
-    await prisma.workspaceMember.update({
-      where: { workspaceId_userId: { workspaceId, userId } },
-      data: { role },
-    });
+    // Demoting an admin must keep at least one admin (atomic guard); other role
+    // changes have no such constraint.
+    if (target.role === "ADMIN" && role === "MEMBER") {
+      await withLastAdminGuard(workspaceId, "A workspace needs at least one admin", update);
+    } else {
+      await update(prisma);
+    }
     recordAudit({
       action: role === "ADMIN" ? "workspace.role_promote" : "workspace.role_demote",
       actorId: actor.id,
@@ -75,23 +99,24 @@ export async function DELETE(
     });
     if (!target) return apiError("That person isn't in this workspace", 404);
 
-    if (target.role === "ADMIN" && (await adminCount(workspaceId)) <= 1) {
-      return apiError("You can't remove the last admin — promote someone first", 400);
-    }
-
     // Drop workspace membership plus their channel memberships + read cursors in
     // this workspace. Their authored messages stay (attributed), like Slack.
-    await prisma.$transaction([
-      prisma.channelMember.deleteMany({
-        where: { userId, channel: { workspaceId } },
-      }),
-      prisma.readState.deleteMany({
-        where: { userId, channel: { workspaceId } },
-      }),
-      prisma.workspaceMember.delete({
-        where: { workspaceId_userId: { workspaceId, userId } },
-      }),
-    ]);
+    const removeMember = async (tx: Prisma.TransactionClient) => {
+      await tx.channelMember.deleteMany({ where: { userId, channel: { workspaceId } } });
+      await tx.readState.deleteMany({ where: { userId, channel: { workspaceId } } });
+      await tx.workspaceMember.delete({ where: { workspaceId_userId: { workspaceId, userId } } });
+    };
+
+    // Removing an admin must keep at least one admin (atomic guard).
+    if (target.role === "ADMIN") {
+      await withLastAdminGuard(
+        workspaceId,
+        "You can't remove the last admin — promote someone first",
+        removeMember,
+      );
+    } else {
+      await prisma.$transaction((tx) => removeMember(tx));
+    }
     recordAudit({
       action: "workspace.member_remove",
       actorId: actor.id,
