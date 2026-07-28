@@ -45,11 +45,13 @@ export const metadata: Metadata = {
     url: SITE_URL,
     title: TITLE,
     description: BRAND_DESCRIPTION,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: TITLE }],
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: BRAND_DESCRIPTION,
+    images: ["/og.png"],
   },
   appleWebApp: {
     capable: true,
