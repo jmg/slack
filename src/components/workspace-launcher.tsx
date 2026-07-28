@@ -42,7 +42,9 @@ export function WorkspaceLauncher({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Could not create workspace");
-      toast.success("Workspace created");
+      // Short-lived: we navigate straight into the new workspace, so the toast
+      // would otherwise linger on the destination page.
+      toast.success("Workspace created", { duration: 1500 });
       router.push(`/w/${data.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not create workspace");

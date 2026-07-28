@@ -109,8 +109,12 @@ export function MessageItem({
   return (
     <div
       id={`msg-${message.id}`}
+      // Focusable so a TAP reveals the action toolbar on touch devices (no hover):
+      // tapping the message focuses it → group-focus-within shows the actions,
+      // tapping elsewhere moves focus away and hides them again.
+      tabIndex={0}
       className={cn(
-        "group relative flex scroll-mt-16 gap-2 px-4 transition-colors hover:bg-muted/40",
+        "group relative flex scroll-mt-16 gap-2 px-4 outline-none transition-colors hover:bg-muted/40 focus-visible:bg-muted/40",
         showHeader ? "mt-2 pt-1.5" : "py-0.5",
       )}
     >
@@ -240,7 +244,7 @@ export function MessageItem({
         <div
           className={cn(
             "absolute -top-3 right-3 items-center rounded-md border bg-background shadow-sm",
-            menuOpen ? "flex" : "hidden group-hover:flex",
+            menuOpen ? "flex" : "hidden group-hover:flex group-focus-within:flex",
           )}
         >
           <DropdownMenu open={reactionOpen} onOpenChange={setReactionOpen}>
