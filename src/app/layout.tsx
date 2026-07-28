@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { PwaRegister } from "@/components/pwa-register";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import { BRAND, BRAND_DOMAIN, BRAND_DESCRIPTION } from "@/lib/brand";
 
 const geistSans = Geist({
@@ -82,6 +83,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>{children}</Providers>
         <PwaRegister />
+        <GoogleAnalytics />
       </body>
     </html>
   );
