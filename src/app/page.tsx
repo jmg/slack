@@ -10,6 +10,7 @@ import {
   Zap,
   Check,
   ArrowRight,
+  X,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing";
@@ -145,6 +146,30 @@ const FAQS = [
     a: "Yes. If someone misses messages while they're offline, they get an email digest so nothing important slips through.",
   },
 ];
+
+const COMPARE: { label: string; talkaroo: string | boolean; slack: string | boolean }[] = [
+  { label: "Paid plan — per user / month", talkaroo: `$${TEAM_PRICE_USD}`, slack: "$7.25+" },
+  { label: "Free plan message history", talkaroo: "Unlimited", slack: "90 days" },
+  { label: "Channels, threads, DMs & search", talkaroo: true, slack: true },
+  { label: "Mentions & file sharing", talkaroo: true, slack: true },
+  { label: "Email when you miss a message", talkaroo: true, slack: true },
+  { label: "Self-host & own your data", talkaroo: true, slack: false },
+  { label: "No seat-based lock-in", talkaroo: true, slack: false },
+];
+
+function Cell({ value, accent }: { value: string | boolean; accent?: boolean }) {
+  if (typeof value === "boolean")
+    return value ? (
+      <Check className={`mx-auto size-5 ${accent ? "text-[#007a5a]" : "text-neutral-400"}`} />
+    ) : (
+      <X className="mx-auto size-5 text-neutral-300" />
+    );
+  return (
+    <span className={`font-semibold ${accent ? "text-[#7c3aed]" : "text-neutral-500"}`}>
+      {value}
+    </span>
+  );
+}
 
 export default async function Home() {
   const user = await getCurrentUser();
@@ -304,6 +329,53 @@ export default async function Home() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* Compare vs Slack */}
+      <section className="mx-auto w-full max-w-4xl px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#007a5a]/10 px-3 py-1 text-xs font-semibold text-[#007a5a]">
+            Save 70%+ vs Slack
+          </span>
+          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+            Everything you love about Slack, for a fraction of the price
+          </h2>
+        </div>
+
+        <div className="mt-10 overflow-hidden rounded-2xl border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-neutral-50">
+                <th className="px-4 py-3 text-left font-medium text-neutral-500 sm:px-6">
+                  Feature
+                </th>
+                <th className="px-4 py-3 text-center sm:px-6">
+                  <span className="font-bold text-[#7c3aed]">{BRAND}</span>
+                </th>
+                <th className="px-4 py-3 text-center font-medium text-neutral-500 sm:px-6">
+                  Slack
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARE.map((row) => (
+                <tr key={row.label} className="border-b last:border-0">
+                  <td className="px-4 py-3 text-neutral-700 sm:px-6">{row.label}</td>
+                  <td className="bg-[#7c3aed]/[0.03] px-4 py-3 text-center sm:px-6">
+                    <Cell value={row.talkaroo} accent />
+                  </td>
+                  <td className="px-4 py-3 text-center sm:px-6">
+                    <Cell value={row.slack} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-center text-xs text-neutral-400">
+          Slack plan names and prices are their own, shown for comparison and current
+          as of publication. Not affiliated with Slack Technologies.
+        </p>
       </section>
 
       {/* Pricing */}
