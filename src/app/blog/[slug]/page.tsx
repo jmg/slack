@@ -4,6 +4,10 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing";
 import { getPost, posts } from "@/content/posts";
+import { BRAND, BRAND_DOMAIN } from "@/lib/brand";
+
+const SITE_URL =
+  process.env.APP_BASE_URL?.replace(/\/+$/, "") ?? `https://${BRAND_DOMAIN}`;
 
 export function generateStaticParams() {
   return posts.map((p) => ({ slug: p.slug }));
@@ -40,14 +44,29 @@ export default async function BlogPost({
   const post = getPost(slug);
   if (!post) notFound();
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: post.title,
-    description: post.description,
-    datePublished: post.date,
-    author: { "@type": "Organization", name: post.author },
-  };
+  const url = `${SITE_URL}/blog/${post.slug}`;
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: post.title,
+      description: post.description,
+      datePublished: post.date,
+      dateModified: post.date,
+      author: { "@type": "Organization", name: post.author },
+      publisher: { "@type": "Organization", name: BRAND, url: SITE_URL },
+      mainEntityOfPage: url,
+      url,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Blog", item: `${SITE_URL}/blog` },
+        { "@type": "ListItem", position: 2, name: post.title, item: url },
+      ],
+    },
+  ];
 
   return (
     <div className="flex min-h-full flex-col">

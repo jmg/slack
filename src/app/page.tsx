@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -21,6 +22,8 @@ import { TEAM_PRICE_USD, FREE_MEMBER_LIMIT } from "@/lib/plans";
 
 const SITE_URL =
   process.env.APP_BASE_URL?.replace(/\/+$/, "") ?? `https://${BRAND_DOMAIN}`;
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const FEATURES = [
   {
@@ -188,6 +191,25 @@ export default async function Home() {
       "@type": "WebSite",
       name: BRAND,
       url: SITE_URL,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: BRAND,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web, iOS, Android",
+      description: BRAND_DESCRIPTION,
+      url: SITE_URL,
+      offers: [
+        { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
+        {
+          "@type": "Offer",
+          name: "Team",
+          price: String(TEAM_PRICE_USD),
+          priceCurrency: "USD",
+          description: "per user, per month",
+        },
+      ],
     },
     {
       "@context": "https://schema.org",

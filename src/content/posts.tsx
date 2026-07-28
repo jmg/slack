@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { BRAND } from "@/lib/brand";
 
 export type Post = {
   slug: string;
@@ -15,6 +16,108 @@ export type Post = {
  * server-rendered pages. Newest first.
  */
 export const posts: Post[] = [
+  {
+    slug: "slack-alternatives-2026",
+    title: "Slack alternatives in 2026: how to choose one",
+    date: "2026-07-28",
+    description:
+      "Cost, message history, data ownership, migration effort — the things that actually matter when you're comparing team-chat tools.",
+    author: "The team",
+    readingMinutes: 5,
+    body: (
+      <>
+        <p>
+          Most teams don&rsquo;t go looking for a Slack alternative because they
+          dislike chat — they go looking because of the bill, the 90-day history
+          wall, or a nagging feeling that their whole company&rsquo;s
+          conversations live somewhere they don&rsquo;t control. Here&rsquo;s what
+          to weigh.
+        </p>
+        <h2>1. Price per user — and what&rsquo;s free</h2>
+        <p>
+          Paid team chat is usually <strong>$7–$13 per user per month</strong>.
+          For a 25-person team that&rsquo;s $2,000+ a year. Look closely at the
+          free tier too: some cap message <em>history</em> (Slack hides anything
+          older than 90 days), others cap <em>people</em>. Decide which limit you
+          can live with. {BRAND}, for context, keeps full history free and charges
+          ${"2"}/user for unlimited members.
+        </p>
+        <h2>2. Do you own your data?</h2>
+        <p>
+          Can you export everything? Can you <strong>self-host</strong> if you
+          ever need to? Tools that let you run the app on your own infrastructure
+          (a web process + Postgres is enough) mean your history is never hostage
+          to a pricing change or an acquisition.
+        </p>
+        <h2>3. The essentials, done well</h2>
+        <p>
+          Channels, threads, DMs, mentions, search and file sharing are table
+          stakes — but <em>fast</em> table stakes matter. Real-time delivery,
+          instant search, and email nudges when you&rsquo;re away are what make a
+          tool feel alive instead of laggy.
+        </p>
+        <h2>4. How hard is it to switch?</h2>
+        <p>
+          The best alternative is worthless if you can never move. Favor tools
+          where a workspace, channels and invites take minutes to set up — you
+          want to migrate in an afternoon, not a quarter.
+        </p>
+        <p>
+          Score each option on those four and the choice usually makes itself. If
+          &ldquo;affordable, full history, yours to run&rdquo; is the shortlist,
+          give {BRAND} a try.
+        </p>
+      </>
+    ),
+  },
+  {
+    slug: "migrate-from-slack",
+    title: "How to migrate your team off Slack in an afternoon",
+    date: "2026-07-27",
+    description:
+      "A practical, low-drama checklist for moving a team to a new chat tool without losing momentum — or people.",
+    author: "The team",
+    readingMinutes: 4,
+    body: (
+      <>
+        <p>
+          Switching team chat sounds scary — it&rsquo;s where everyone lives all
+          day. But a move is mostly logistics, and a small team can do it between
+          lunch and end of day. Here&rsquo;s the playbook.
+        </p>
+        <h2>1. Inventory what you actually use</h2>
+        <p>
+          List your <strong>active</strong> channels — not the 40 dead ones, the
+          8 that see traffic. Note the handful of integrations you&rsquo;d miss.
+          Most teams need far less than they think.
+        </p>
+        <h2>2. Set up the new workspace</h2>
+        <p>
+          Create the workspace, recreate those active channels, and set who&rsquo;s
+          an admin. In {BRAND} this is a few minutes: make a workspace, add the
+          channels, done.
+        </p>
+        <h2>3. Invite the team by email</h2>
+        <p>
+          Send invites and let people land in the default channels automatically.
+          Pin a short &ldquo;here&rsquo;s how we&rsquo;ll use this&rdquo; message
+          in #general so norms are set from message one.
+        </p>
+        <h2>4. Run both for a few days, then cut over</h2>
+        <p>
+          Keep the old tool read-only for a week so nothing is lost, but do all{" "}
+          <em>new</em> conversation in the new one from day one — a hard cutover
+          date beats a slow limbo. Export your old history for the archive.
+        </p>
+        <h2>5. Redirect the muscle memory</h2>
+        <p>
+          Rename the old workspace &ldquo;⚠️ moved — see the new one,&rdquo; update
+          the bookmark, and install the new app on everyone&rsquo;s phone. Within
+          a week nobody remembers the switch.
+        </p>
+      </>
+    ),
+  },
   {
     slug: "async-first-team-communication",
     title: "Async-first: how to make team chat calmer, not louder",
