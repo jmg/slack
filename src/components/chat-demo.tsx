@@ -11,6 +11,7 @@ import {
   MessageSquareText,
   ImageIcon,
   FileText,
+  X,
 } from "lucide-react";
 
 type Reaction = { emoji: string; count: number; mine?: boolean };
@@ -32,9 +33,10 @@ const ALAN = { name: "Alan T.", color: "#1264a3" };
 const GRACE = { name: "Grace H.", color: "#0b6e4f" };
 
 const DRAFT_TEXT = "On it — deploying now 🚀";
+const EDIT_SUFFIX = " (staging first)";
+const SEARCH_TEXT = "deploy";
 const PICKER_EMOJIS = ["👍", "❤️", "✅", "🎉", "🚀", "👀"];
 
-// The baseline conversation the loop resets to.
 const seed = (): Msg[] => [
   {
     id: "m1",
@@ -75,13 +77,31 @@ function renderText(text: string): ReactNode[] {
   });
 }
 
+const GRACE_MSG: Msg = {
+  id: "g",
+  ...GRACE,
+  time: "9:45",
+  text: "Beautiful work @Ada 🙌 the mobile layout looks great.",
+  attachment: { kind: "image", name: "mobile-preview.png", meta: "240 KB" },
+};
+const ALAN_MSG: Msg = {
+  id: "a3",
+  ...ALAN,
+  time: "9:47",
+  text: "Done — logs in `deploy.log`. **v2.1** is live 🚀",
+  attachment: { kind: "file", name: "deploy.log", meta: "12 KB" },
+};
+
 export function ChatDemo() {
   const [messages, setMessages] = useState<Msg[]>(seed);
   const [typing, setTyping] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
-  const [picker, setPicker] = useState<string | null>(null); // msg id showing the reaction picker
-  const [hover, setHover] = useState<string | null>(null); // msg id showing the hover toolbar
-  const [fading, setFading] = useState(false); // loop reset fade
+  const [picker, setPicker] = useState<string | null>(null);
+  const [hover, setHover] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [thread, setThread] = useState(false);
+  const [fading, setFading] = useState(false);
 
   useEffect(() => {
     const reduced =
@@ -97,27 +117,17 @@ export function ChatDemo() {
         ),
       );
 
-    const FULL: Msg[] = [
-      ...seed(),
-      {
-        id: "g",
-        ...GRACE,
-        time: "9:45",
-        text: "Beautiful work @Ada 🙌 the mobile layout looks great.",
-        attachment: { kind: "image", name: "mobile-preview.png", meta: "240 KB" },
-      },
-      { id: "a2", ...ADA, time: "9:46", text: DRAFT_TEXT },
-      {
-        id: "a3",
-        ...ALAN,
-        time: "9:47",
-        text: "Done — logs in `deploy.log`. **v2.1** is live 🚀",
-        attachment: { kind: "file", name: "deploy.log", meta: "12 KB" },
-      },
-    ];
-
     if (reduced) {
-      const t = setTimeout(() => setMessages(FULL), 0);
+      const t = setTimeout(
+        () =>
+          setMessages([
+            ...seed(),
+            { ...GRACE_MSG, reactions: [{ emoji: "✅", count: 1, mine: true }] },
+            { id: "a2", ...ADA, time: "9:46", text: DRAFT_TEXT + EDIT_SUFFIX, edited: true },
+            ALAN_MSG,
+          ]),
+        0,
+      );
       return () => clearTimeout(t);
     }
 
@@ -132,63 +142,68 @@ export function ChatDemo() {
       setDraft("");
       setPicker(null);
       setHover(null);
+      setSearch("");
+      setSearchOpen(false);
+      setThread(false);
       setMessages(seed());
 
-      // 1. Grace types, then replies with an @mention + shares an image.
-      at(900, () => setTyping("Grace Hopper"));
-      at(2200, () => {
-        setTyping(null);
-        setMessages((m) => [
-          ...m,
-          {
-            id: "g",
-            ...GRACE,
-            time: "9:45",
-            text: "Beautiful work @Ada 🙌 the mobile layout looks great.",
-            attachment: { kind: "image", name: "mobile-preview.png", meta: "240 KB" },
-          },
-        ]);
+      // 1. Search the workspace from the top bar.
+      for (let i = 1; i <= SEARCH_TEXT.length; i++) {
+        at(200 + i * 100, () => setSearch(SEARCH_TEXT.slice(0, i)));
+      }
+      at(900, () => setSearchOpen(true));
+      at(1900, () => {
+        setSearchOpen(false);
+        setSearch("");
       });
-      // 2. Hover toolbar → emoji picker → a reaction lands.
-      at(3100, () => setHover("g"));
-      at(3500, () => setPicker("g"));
-      at(4200, () => {
+
+      // 2. Grace types, replies with an @mention, shares an image.
+      at(2100, () => setTyping("Grace Hopper"));
+      at(3300, () => {
+        setTyping(null);
+        setMessages((m) => [...m, GRACE_MSG]);
+      });
+      // 3. Hover toolbar → emoji picker → reaction lands.
+      at(4100, () => setHover("g"));
+      at(4500, () => setPicker("g"));
+      at(5200, () => {
         setPicker(null);
         setHover(null);
         react("g", "✅");
       });
 
-      // 3. You compose a message char-by-char, then send it.
+      // 4. You compose char-by-char and send.
       for (let i = 1; i <= DRAFT_TEXT.length; i++) {
-        at(4900 + i * 42, () => setDraft(DRAFT_TEXT.slice(0, i)));
+        at(5800 + i * 42, () => setDraft(DRAFT_TEXT.slice(0, i)));
       }
-      const sentAt = 4900 + DRAFT_TEXT.length * 42 + 350;
+      const sentAt = 5800 + DRAFT_TEXT.length * 42 + 300;
       at(sentAt, () => {
         setDraft("");
         setMessages((m) => [...m, { id: "a2", ...ADA, time: "9:46", text: DRAFT_TEXT }]);
       });
-      at(sentAt + 650, () => react("a2", "🔥"));
+      at(sentAt + 600, () => react("a2", "🔥"));
+      // 5. Edit that message.
+      at(sentAt + 1400, () =>
+        setMessages((m) =>
+          m.map((x) => (x.id === "a2" ? { ...x, text: DRAFT_TEXT + EDIT_SUFFIX, edited: true } : x)),
+        ),
+      );
 
-      // 4. Alan replies with formatting + a file, then reacts.
-      at(sentAt + 1500, () => setTyping("Alan Turing"));
-      at(sentAt + 2700, () => {
+      // 6. Alan replies with formatting + a file, then reacts.
+      at(sentAt + 2200, () => setTyping("Alan Turing"));
+      at(sentAt + 3400, () => {
         setTyping(null);
-        setMessages((m) => [
-          ...m,
-          {
-            id: "a3",
-            ...ALAN,
-            time: "9:47",
-            text: "Done — logs in `deploy.log`. **v2.1** is live 🚀",
-            attachment: { kind: "file", name: "deploy.log", meta: "12 KB" },
-          },
-        ]);
+        setMessages((m) => [...m, ALAN_MSG]);
       });
-      at(sentAt + 3400, () => react("a3", "🎉"));
+      at(sentAt + 4100, () => react("a3", "🎉"));
 
-      // 5. Clear fade → restart (a visible, deliberate loop boundary).
-      at(sentAt + 4600, () => setFading(true));
-      at(sentAt + 5100, run);
+      // 7. Open the thread on the first message, hold, close.
+      at(sentAt + 4900, () => setThread(true));
+      at(sentAt + 7100, () => setThread(false));
+
+      // 8. Fade out → restart (a clear loop boundary).
+      at(sentAt + 7700, () => setFading(true));
+      at(sentAt + 8200, run);
     };
 
     const start = setTimeout(run, 250);
@@ -198,14 +213,33 @@ export function ChatDemo() {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-2xl">
-      {/* window bar */}
-      <div className="flex items-center gap-1.5 border-b bg-neutral-50 px-4 py-3">
+      {/* window bar + search */}
+      <div className="relative flex items-center gap-1.5 border-b bg-neutral-50 px-4 py-3">
         <span className="size-3 rounded-full bg-[#ff5f57]" />
         <span className="size-3 rounded-full bg-[#febc2e]" />
         <span className="size-3 rounded-full bg-[#28c840]" />
-        <div className="ml-4 hidden items-center gap-1.5 rounded-md bg-white px-2 py-1 text-xs text-neutral-400 ring-1 ring-black/5 sm:flex">
-          <Search className="size-3" /> Search Acme Inc
+        <div className="ml-4 hidden w-48 items-center gap-1.5 rounded-md bg-white px-2 py-1 text-xs ring-1 ring-black/5 sm:flex">
+          <Search className="size-3 text-neutral-400" />
+          <span className={search ? "text-neutral-800" : "text-neutral-400"}>
+            {search || "Search Acme Inc"}
+          </span>
         </div>
+        {searchOpen && (
+          <div className="talk-pop absolute left-[4.75rem] top-11 z-30 hidden w-56 rounded-lg border bg-white p-1 text-xs shadow-xl sm:block">
+            <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">
+              Channels
+            </p>
+            <p className="flex items-center gap-1.5 rounded px-2 py-1 text-neutral-700">
+              <Hash className="size-3" /> deploy-alerts
+            </p>
+            <p className="mt-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">
+              Messages
+            </p>
+            <p className="rounded px-2 py-1 text-neutral-700">
+              <span className="font-semibold">Alan</span> — shipping the release now
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="flex h-[400px]">
@@ -247,14 +281,13 @@ export function ChatDemo() {
         </div>
 
         {/* channel */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="relative flex min-w-0 flex-1 flex-col">
           <div className="flex items-center gap-2 border-b px-4 py-3">
             <Hash className="size-4 text-neutral-400" />
             <span className="text-sm font-bold text-neutral-800">general</span>
             <span className="ml-auto text-xs text-neutral-400">3 members</span>
           </div>
 
-          {/* messages — bottom-anchored; fades out at the loop boundary */}
           <div
             className={`flex flex-1 flex-col justify-end gap-3.5 overflow-hidden p-4 transition-opacity duration-300 ${
               fading ? "opacity-0" : "opacity-100"
@@ -262,14 +295,12 @@ export function ChatDemo() {
           >
             {messages.map((m, i) => (
               <div key={m.id} className={`group relative flex gap-2.5 ${i < 2 ? "" : "talk-msg"}`}>
-                {/* hover toolbar */}
                 {hover === m.id && (
                   <div className="talk-pop absolute -top-3 right-2 z-10 flex items-center gap-0.5 rounded-md border bg-white px-1 py-0.5 shadow-sm">
                     <SmilePlus className="size-3.5 text-neutral-400" />
                     <MessageSquareText className="size-3.5 text-neutral-400" />
                   </div>
                 )}
-                {/* emoji reaction picker */}
                 {picker === m.id && (
                   <div className="talk-pop absolute -top-8 right-2 z-20 flex gap-0.5 rounded-lg border bg-white px-1.5 py-1 shadow-lg">
                     {PICKER_EMOJIS.map((e) => (
@@ -390,6 +421,57 @@ export function ChatDemo() {
             >
               <Send className="size-3.5" />
             </span>
+          </div>
+
+          {/* thread panel — slides in over the channel */}
+          <div
+            className={`absolute inset-y-0 right-0 z-30 flex w-60 flex-col border-l bg-white shadow-2xl transition-transform duration-300 ${
+              thread ? "translate-x-0" : "translate-x-full"
+            }`}
+          >
+            <div className="flex items-center justify-between border-b px-3 py-3">
+              <span className="text-sm font-bold text-neutral-800">Thread</span>
+              <X className="size-4 text-neutral-400" />
+            </div>
+            <div className="space-y-3 p-3 text-sm">
+              <div className="flex gap-2">
+                <span
+                  className="flex size-6 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white"
+                  style={{ backgroundColor: ADA.color }}
+                >
+                  A
+                </span>
+                <p className="text-neutral-700">
+                  <span className="font-bold text-neutral-800">Ada L.</span> Landing page is live 🎉
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400">
+                <span className="h-px flex-1 bg-neutral-200" /> 2 replies
+                <span className="h-px flex-1 bg-neutral-200" />
+              </div>
+              <div className="flex gap-2">
+                <span
+                  className="flex size-6 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white"
+                  style={{ backgroundColor: GRACE.color }}
+                >
+                  G
+                </span>
+                <p className="text-neutral-700">
+                  <span className="font-bold text-neutral-800">Grace H.</span> Testing on iOS now 📱
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <span
+                  className="flex size-6 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white"
+                  style={{ backgroundColor: ALAN.color }}
+                >
+                  A
+                </span>
+                <p className="text-neutral-700">
+                  <span className="font-bold text-neutral-800">Alan T.</span> LGTM ✅ ship it
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
