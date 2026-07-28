@@ -183,6 +183,14 @@
 }
 .talk-msg { opacity: 0; animation: talk-msg 0.38s ease-out forwards; }
 
+/* Reaction / small element pop-in. */
+@keyframes talk-pop {
+  0%   { opacity: 0; transform: scale(0.6); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.talk-pop { animation: talk-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
 /* Typing-indicator dots. */
 @keyframes talk-typing {
   0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
@@ -207,7 +215,8 @@
   }
   .talk-float,
   .talk-dot,
-  .talk-glow {
+  .talk-glow,
+  .talk-pop {
     animation: none;
   }
 }

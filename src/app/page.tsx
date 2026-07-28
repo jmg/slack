@@ -12,7 +12,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { MarketingHeader, MarketingFooter, ChatMockup } from "@/components/marketing";
+import { MarketingHeader, MarketingFooter } from "@/components/marketing";
+import { ChatDemo } from "@/components/chat-demo";
 import { posts } from "@/content/posts";
 import { BRAND, BRAND_DOMAIN, BRAND_TAGLINE, BRAND_DESCRIPTION } from "@/lib/brand";
 
@@ -230,7 +231,7 @@ export default async function Home() {
             style={{ animationDelay: "0.28s" }}
           >
             <div className="talk-float">
-              <ChatMockup />
+              <ChatDemo />
             </div>
           </div>
         </div>
