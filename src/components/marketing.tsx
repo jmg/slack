@@ -184,7 +184,7 @@ export function ChatMockup() {
               <div
                 key={m.name}
                 className="talk-msg flex gap-2.5"
-                style={{ animationDelay: `${0.7 + i * 0.3}s` }}
+                style={{ animationDelay: `${0.32 + i * 0.14}s` }}
               >
                 <span
                   className="flex size-8 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white"

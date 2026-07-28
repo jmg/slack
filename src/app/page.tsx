@@ -184,25 +184,25 @@ export default async function Home() {
           <div className="mx-auto max-w-3xl text-center">
             <span
               className="talk-rise inline-flex items-center gap-1.5 rounded-full border border-[#7c3aed]/15 bg-[#7c3aed]/5 px-3 py-1 text-xs font-medium text-[#7c3aed]"
-              style={{ animationDelay: "0.05s" }}
+              style={{ animationDelay: "0.03s" }}
             >
               <Zap className="size-3.5" /> Open team chat · self-hostable
             </span>
             <h1
               className="talk-rise mt-5 text-balance text-4xl font-extrabold tracking-tight sm:text-6xl"
-              style={{ animationDelay: "0.15s" }}
+              style={{ animationDelay: "0.08s" }}
             >
               {BRAND_TAGLINE}
             </h1>
             <p
               className="talk-rise mx-auto mt-5 max-w-2xl text-pretty text-lg text-neutral-600"
-              style={{ animationDelay: "0.25s" }}
+              style={{ animationDelay: "0.13s" }}
             >
               {BRAND_DESCRIPTION}
             </p>
             <div
               className="talk-rise mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
-              style={{ animationDelay: "0.35s" }}
+              style={{ animationDelay: "0.18s" }}
             >
               <Link
                 href="/register"
@@ -219,7 +219,7 @@ export default async function Home() {
             </div>
             <p
               className="talk-rise mt-4 text-sm text-neutral-500"
-              style={{ animationDelay: "0.45s" }}
+              style={{ animationDelay: "0.23s" }}
             >
               No credit card required · Free forever for small teams
             </p>
@@ -227,7 +227,7 @@ export default async function Home() {
 
           <div
             className="talk-rise mx-auto mt-14 max-w-4xl"
-            style={{ animationDelay: "0.55s" }}
+            style={{ animationDelay: "0.28s" }}
           >
             <div className="talk-float">
               <ChatMockup />
