@@ -20,6 +20,7 @@ export function PushToggle() {
   const [configured, setConfigured] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [iosHint, setIosHint] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +32,19 @@ export function PushToggle() {
         "Notification" in window;
       if (cancelled) return;
       setSupported(ok);
-      if (!ok) return;
+      if (!ok) {
+        // iOS only exposes the Push API inside a Home-Screen web app. If we're on
+        // iPhone/iPad in the browser, tell the user to install it first.
+        const ua = navigator.userAgent || "";
+        const isIOS =
+          /iphone|ipad|ipod/i.test(ua) ||
+          (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+        const standalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          (navigator as Navigator & { standalone?: boolean }).standalone === true;
+        setIosHint(isIOS && !standalone);
+        return;
+      }
       try {
         const d = await (await fetch("/api/push/vapid")).json();
         if (cancelled) return;
@@ -102,7 +115,21 @@ export function PushToggle() {
     }
   }
 
-  if (!supported) return null;
+  if (!supported) {
+    if (!iosHint) return null;
+    return (
+      <div className="mt-4 flex items-start gap-3 rounded-md bg-muted/50 p-3">
+        <Bell className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">
+            Notifications on iPhone need Talkaroo on your Home Screen.
+          </span>{" "}
+          In Safari, tap the Share button → <strong>Add to Home Screen</strong>, then
+          open Talkaroo from your home screen and turn on notifications here.
+        </span>
+      </div>
+    );
+  }
 
   return (
     <label className="mt-4 flex cursor-pointer items-start gap-3">
