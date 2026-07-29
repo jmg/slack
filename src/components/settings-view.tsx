@@ -278,23 +278,23 @@ export function SettingsView({
                   type="button"
                   onClick={() => pickTheme(key)}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border p-2.5 text-left transition hover:bg-muted/50",
+                    "relative flex items-center gap-2.5 rounded-lg border p-2.5 pr-7 text-left transition hover:bg-muted/50",
                     selected ? "border-foreground ring-1 ring-foreground" : "border-border",
                   )}
                 >
                   <span
-                    className="flex size-9 shrink-0 items-center justify-center rounded-md"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-md"
                     style={{ backgroundColor: t.sidebar }}
                   >
                     <span
-                      className="size-3.5 rounded-full"
+                      className="size-3 rounded-full"
                       style={{ backgroundColor: t.active }}
                     />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">
                     {t.label}
                   </span>
-                  {selected && <Check className="size-4 shrink-0" />}
+                  {selected && <Check className="absolute right-2 top-1/2 size-4 -translate-y-1/2" />}
                 </button>
               );
             })}
