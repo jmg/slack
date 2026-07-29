@@ -6,6 +6,7 @@ import { requireChannelAccess, requireChannelPostAccess } from "@/lib/data";
 import { listChannelMessages, messageInclude, serializeMessage } from "@/lib/messages";
 import { claimAttachments } from "@/lib/uploads";
 import { broadcastMessage } from "@/lib/realtime";
+import { sendPushForMessage } from "@/lib/push";
 
 export async function GET(
   _req: NextRequest,
@@ -61,6 +62,8 @@ export async function POST(
       conversationId: null,
       parentId: null,
     });
+    // Fire Web Push for @mentions (fire-and-forget; never blocks the send).
+    void sendPushForMessage(message.id).catch((e) => console.error("push", e));
     return NextResponse.json(serializeMessage(message, user.id));
   });
 }

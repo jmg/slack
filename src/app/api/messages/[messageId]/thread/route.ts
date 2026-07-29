@@ -10,6 +10,7 @@ import {
 } from "@/lib/messages";
 import { claimAttachments } from "@/lib/uploads";
 import { broadcastMessage } from "@/lib/realtime";
+import { sendPushForMessage } from "@/lib/push";
 
 export async function GET(
   _req: NextRequest,
@@ -82,6 +83,8 @@ export async function POST(
       conversationId: parent.conversationId,
       parentId: parent.id,
     });
+    // Push @mentions in the thread reply, fire-and-forget.
+    void sendPushForMessage(reply.id).catch((e) => console.error("push", e));
     return NextResponse.json(serializeMessage(reply, user.id));
   });
 }

@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { UserAvatar } from "@/components/user-avatar";
 import { cn } from "@/lib/utils";
 import { CHAT_THEMES } from "@/lib/themes";
+import { PushToggle } from "@/components/push-toggle";
 
 /** Read an image file and re-encode it as a small square avatar data URL. */
 async function resizeToAvatar(file: File): Promise<string> {
@@ -324,6 +325,7 @@ export function SettingsView({
               </span>
             </span>
           </label>
+          <PushToggle />
         </section>
 
         <BillingSection workspaceId={workspaceId} isAdmin={isAdmin} />

@@ -10,6 +10,7 @@ import {
 } from "@/lib/messages";
 import { claimAttachments } from "@/lib/uploads";
 import { broadcastMessage } from "@/lib/realtime";
+import { sendPushForMessage } from "@/lib/push";
 
 export async function GET(
   _req: NextRequest,
@@ -59,6 +60,8 @@ export async function POST(
       conversationId,
       parentId: null,
     });
+    // Push the DM to the other participant(s), fire-and-forget.
+    void sendPushForMessage(message.id).catch((e) => console.error("push", e));
     return NextResponse.json(serializeMessage(message, user.id));
   });
 }

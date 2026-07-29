@@ -48,6 +48,7 @@ model User {
   messages            Message[]
   reactions           Reaction[]
   readStates          ReadState[]
+  pushSubscriptions   PushSubscription[]
   attachments         Attachment[]
   createdChannels     Channel[]            @relation("ChannelCreator")
   createdInvites      Invite[]             @relation("InviteCreator")
@@ -313,4 +314,19 @@ model LinkPreview {
   imageUrl    String?
   siteName    String?
   fetchedAt   DateTime @default(now())
+}
+
+/// A browser Web Push subscription (one per device/browser) for delivering
+/// mention/DM notifications when the app is closed. See src/lib/push.ts.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
