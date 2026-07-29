@@ -229,6 +229,7 @@ export function ChatView({
         </header>
 
         <MessageList
+          key={messagesUrl}
           messages={messages}
           currentUserId={currentUserId}
           onToggleReaction={toggleReaction}
