@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { requireWorkspaceMember } from "@/lib/data";
+import { assertSameOrigin } from "@/lib/csrf";
 
 const updateSchema = z.object({
   name: z.string().trim().min(1, "Workspace name is required").max(80),
@@ -14,6 +15,7 @@ export async function PATCH(
   { params }: { params: Promise<{ workspaceId: string }> },
 ) {
   return handle(async () => {
+    assertSameOrigin(req);
     const user = await requireUser();
     const { workspaceId } = await params;
     const membership = await requireWorkspaceMember(user.id, workspaceId);

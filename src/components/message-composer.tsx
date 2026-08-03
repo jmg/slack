@@ -330,7 +330,7 @@ export function MessageComposer({
         </div>
       </div>
 
-      <p className="mt-1 px-1 text-xs text-muted-foreground">
+      <p className="mt-1 hidden px-1 text-xs text-muted-foreground sm:block">
         <kbd className="font-sans font-semibold">Enter</kbd> to send,{" "}
         <kbd className="font-sans font-semibold">Shift+Enter</kbd> for a new line
         {workspaceId ? (

@@ -111,9 +111,9 @@ async function main() {
       const plural = unread === 1 ? "" : "s";
       const ok = await sendEmail({
         to: user.email,
-        subject: `You have ${unread} unread message${plural} in Slack`,
-        text: `Hi ${user.name},\n\nYou have ${unread} unread message${plural} waiting.\nOpen ${APP_URL} to catch up.\n\n— Slack`,
-        html: `<p>Hi ${escapeHtml(user.name)},</p><p>You have <strong>${unread}</strong> unread message${plural} waiting.</p><p><a href="${APP_URL}">Open Slack to catch up →</a></p>`,
+        subject: `You have ${unread} unread message${plural} in Talkaroo`,
+        text: `Hi ${user.name},\n\nYou have ${unread} unread message${plural} waiting.\nOpen ${APP_URL} to catch up.\n\n— Talkaroo`,
+        html: `<p>Hi ${escapeHtml(user.name)},</p><p>You have <strong>${unread}</strong> unread message${plural} waiting.</p><p><a href="${APP_URL}">Open Talkaroo to catch up →</a></p>`,
       });
       if (ok) emailed += 1;
       console.log(`${user.email}: ${unread} unread (emailed: ${ok})`);

@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { WorkspaceRail } from "@/components/workspace-rail";
 import { WorkspaceSidebar } from "@/components/workspace-sidebar";
+import { WorkspaceShell } from "@/components/workspace-shell";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { WorkspaceRealtime } from "@/components/workspace-realtime";
 import { WorkspaceNotifications } from "@/components/workspace-notifications";
@@ -89,35 +90,38 @@ export default async function WorkspaceLayout({
   }));
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
+    <>
       <PresenceHeartbeat workspaceId={workspaceId} />
       <WorkspaceRealtime workspaceId={workspaceId} />
       <WorkspaceNotifications
         workspaceId={workspaceId}
         workspaceName={membership.workspace.name}
       />
-      <WorkspaceRail workspaces={workspaces} activeId={workspaceId} />
-      <WorkspaceSidebar
-        workspace={membership.workspace}
-        channels={channels.map((c) => ({
-          id: c.id,
-          name: c.name,
-          isPrivate: c.isPrivate,
-          archived: c.archivedAt != null,
-        }))}
-        conversations={conversations}
-        members={members}
-        theme={themeFor(user.chatTheme)}
-        user={{
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-        }}
-      />
-      <main className="flex min-w-0 flex-1 flex-col bg-background">
+      <WorkspaceShell
+        rail={<WorkspaceRail workspaces={workspaces} activeId={workspaceId} />}
+        sidebar={
+          <WorkspaceSidebar
+            workspace={membership.workspace}
+            channels={channels.map((c) => ({
+              id: c.id,
+              name: c.name,
+              isPrivate: c.isPrivate,
+              archived: c.archivedAt != null,
+            }))}
+            conversations={conversations}
+            members={members}
+            theme={themeFor(user.chatTheme)}
+            user={{
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              image: user.image,
+            }}
+          />
+        }
+      >
         {children}
-      </main>
-    </div>
+      </WorkspaceShell>
+    </>
   );
 }

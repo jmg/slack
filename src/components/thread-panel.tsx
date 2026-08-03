@@ -13,12 +13,18 @@ export function ThreadPanel({
   messageId,
   currentUserId,
   workspaceId,
+  mentionNames,
+  canModerate,
+  canInteract = true,
   onClose,
   onThreadChanged,
 }: {
   messageId: string;
   currentUserId: string;
   workspaceId?: string;
+  mentionNames?: string[];
+  canModerate?: boolean;
+  canInteract?: boolean;
   onClose: () => void;
   onThreadChanged: () => void;
 }) {
@@ -99,7 +105,7 @@ export function ThreadPanel({
   }
 
   return (
-    <aside className="flex w-96 shrink-0 flex-col border-l bg-background">
+    <aside className="fixed inset-0 z-40 flex w-full shrink-0 flex-col border-l bg-background md:static md:z-auto md:w-96">
       <header className="flex h-14 shrink-0 items-center justify-between border-b px-4">
         <div>
           <h3 className="text-[15px] font-bold">Thread</h3>
@@ -125,6 +131,9 @@ export function ThreadPanel({
               onEdit={editMessage}
               onDelete={deleteMessage}
               hideThreadIndicator
+              mentionNames={mentionNames}
+              canModerate={canModerate}
+              canInteract={canInteract}
             />
             <div className="my-2 flex items-center gap-3 px-4">
               <span className="text-xs font-semibold text-muted-foreground">
@@ -143,6 +152,9 @@ export function ThreadPanel({
                 onEdit={editMessage}
                 onDelete={deleteMessage}
                 hideThreadIndicator
+                mentionNames={mentionNames}
+                canModerate={canModerate}
+                canInteract={canInteract}
               />
             ))}
           </>
@@ -151,12 +163,18 @@ export function ThreadPanel({
         )}
       </div>
 
-      <MessageComposer
-        placeholder="Reply…"
-        onSend={sendReply}
-        workspaceId={workspaceId}
-        draftKey={`thread:${messageId}`}
-      />
+      {canInteract ? (
+        <MessageComposer
+          placeholder="Reply…"
+          onSend={sendReply}
+          workspaceId={workspaceId}
+          draftKey={`thread:${messageId}`}
+        />
+      ) : (
+        <p className="border-t px-4 py-4 text-center text-sm text-muted-foreground">
+          Join the channel to reply.
+        </p>
+      )}
     </aside>
   );
 }

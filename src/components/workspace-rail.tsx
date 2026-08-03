@@ -8,6 +8,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { BrandMark } from "@/components/brand-logo";
+import { BRAND } from "@/lib/brand";
 
 type RailWorkspace = { id: string; name: string };
 
@@ -20,6 +22,18 @@ export function WorkspaceRail({
 }) {
   return (
     <nav className="flex w-16 shrink-0 flex-col items-center gap-2 bg-[#2c0d2d] py-3">
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Link href="/workspaces" className="mb-1" aria-label={BRAND}>
+              <BrandMark className="size-9 rounded-lg shadow-sm ring-1 ring-white/10" />
+            </Link>
+          }
+        />
+        <TooltipContent side="right">{BRAND}</TooltipContent>
+      </Tooltip>
+      <div className="mb-1 h-px w-8 bg-white/10" />
+
       {workspaces.map((ws) => (
         <Tooltip key={ws.id}>
           <TooltipTrigger

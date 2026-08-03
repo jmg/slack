@@ -26,7 +26,7 @@ model User {
   /// issued at; getCurrentUser rejects the token when they no longer match.
   tokenVersion Int      @default(0)
   /// Email me about messages I haven't seen (see the notify-emails cron).
-  emailNotifications Boolean @default(false)
+  emailNotifications Boolean @default(true)
   /// Dedupe cursor for that cron: messages created at/before this have already
   /// been considered for an email, so we never notify the same message twice.
   lastNotifiedAt DateTime?
@@ -48,6 +48,7 @@ model User {
   messages            Message[]
   reactions           Reaction[]
   readStates          ReadState[]
+  pushSubscriptions   PushSubscription[]
   attachments         Attachment[]
   createdChannels     Channel[]            @relation("ChannelCreator")
   createdInvites      Invite[]             @relation("InviteCreator")
@@ -62,6 +63,16 @@ model Workspace {
   ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  /// Billing (Stripe). "free" or "team". The subscription is per workspace,
+  /// quantity = seats (member count). See src/lib/billing.ts + the webhook.
+  plan                 String    @default("free")
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  /// Stripe subscription status (active, trialing, past_due, canceled, …).
+  subscriptionStatus   String?
+  /// End of the current paid period; the plan stays "team" until then.
+  currentPeriodEnd     DateTime?
 
   owner         User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
   members       WorkspaceMember[]
@@ -303,6 +314,21 @@ model LinkPreview {
   imageUrl    String?
   siteName    String?
   fetchedAt   DateTime @default(now())
+}
+
+/// A browser Web Push subscription (one per device/browser) for delivering
+/// mention/DM notifications when the app is closed. See src/lib/push.ts.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

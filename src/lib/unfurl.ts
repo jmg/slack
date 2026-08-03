@@ -78,7 +78,7 @@ async function safeFetch(start: URL): Promise<Response | null> {
         signal: controller.signal,
         redirect: "manual", // we follow ourselves so each hop is re-validated
         headers: {
-          "user-agent": "SlackCloneBot/1.0 (+link preview)",
+          "user-agent": "TalkarooBot/1.0 (+link preview)",
           accept: "text/html,application/xhtml+xml",
         },
       });

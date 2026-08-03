@@ -13,7 +13,7 @@ export default function RegisterPage() {
     <Card>
       <CardHeader>
         <CardTitle>Create your account</CardTitle>
-        <CardDescription>Get started with your own Slack-style workspace.</CardDescription>
+        <CardDescription>Get started with your own team workspace.</CardDescription>
       </CardHeader>
       <CardContent>
         <Suspense>

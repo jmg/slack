@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { toast } from "sonner";
-import { Hash, Lock, Users } from "lucide-react";
+import { Hash, Lock, Users, Menu } from "lucide-react";
+import { useOpenSidebar } from "@/components/workspace-shell";
 import { UserAvatar } from "@/components/user-avatar";
 import { MessageList } from "@/components/message-list";
 import { MessageComposer } from "@/components/message-composer";
@@ -23,6 +24,7 @@ export function ChatView({
   avatar,
   placeholder,
   channelId,
+  isMember = true,
 }: {
   messagesUrl: string;
   currentUserId: string;
@@ -34,13 +36,59 @@ export function ChatView({
   placeholder: string;
   /** Set for channels (not DMs) — enables the members dialog. */
   channelId?: string;
+  /** Whether the current user has joined this channel. Non-members can read a
+   *  public channel but see a Join bar instead of the composer. DMs pass true. */
+  isMember?: boolean;
 }) {
   // No polling: the workspace SSE stream revalidates this key the instant a
   // message lands, is edited/deleted, or gets a reaction (see useWorkspaceEvents).
+  const openSidebar = useOpenSidebar();
   const { data: messages = [], mutate } = useSWR<SerializedMessage[]>(messagesUrl);
+  // Member names power full-name @mention highlighting in the timeline. SWR
+  // dedupes this with the composer's identical request, so it's not a 2nd fetch.
+  const { data: workspaceMembers = [] } = useSWR<
+    { name: string; isMe?: boolean; role?: "ADMIN" | "MEMBER" }[]
+  >(workspaceId ? `/api/workspaces/${workspaceId}/members` : null);
+  const mentionNames = workspaceMembers.map((m) => m.name);
+  // Workspace admins can delete anyone's message (moderation). Enforced server
+  // side too — this just surfaces the action in the UI.
+  const canModerate = workspaceMembers.some((m) => m.isMe && m.role === "ADMIN");
+  // In a channel you're previewing (not joined), the timeline is read-only:
+  // hide the hover actions (react/reply/etc). DMs are always interactive.
   const [threadId, setThreadId] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
   const { mutate: globalMutate } = useSWRConfig();
+
+  // Channel membership: non-members can read a public channel but must join to
+  // post (Slack-style). Seeded from the server prop; flips optimistically on join.
+  const [joined, setJoined] = useState(isMember);
+  const [joining, setJoining] = useState(false);
+  // Re-sync when navigating to a different channel (server prop changes) without
+  // a set-state-in-effect: adjust state during render on prop change.
+  const [syncedMember, setSyncedMember] = useState(isMember);
+  if (isMember !== syncedMember) {
+    setSyncedMember(isMember);
+    setJoined(isMember);
+  }
+
+  async function joinChannel() {
+    if (!channelId || joining) return;
+    setJoining(true);
+    try {
+      const res = await fetch(`/api/channels/${channelId}/join`, { method: "POST" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error ?? "Could not join the channel");
+      }
+      setJoined(true);
+      if (workspaceId) void globalMutate(`/api/workspaces/${workspaceId}/unread`);
+      void globalMutate(`/api/channels/${channelId}/members`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not join the channel");
+    } finally {
+      setJoining(false);
+    }
+  }
 
   // Viewing a channel/DM marks it read — on open and as new messages land —
   // then refreshes the sidebar's unread badges.
@@ -145,6 +193,14 @@ export function ChatView({
     <div className="flex h-full">
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          <button
+            type="button"
+            onClick={openSidebar}
+            aria-label="Open menu"
+            className="-ml-1.5 flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground md:hidden"
+          >
+            <Menu className="size-5" />
+          </button>
           {iconType === "dm" && avatar ? (
             <UserAvatar name={avatar.name} image={avatar.image} className="size-6" />
           ) : iconType === "lock" ? (
@@ -173,6 +229,7 @@ export function ChatView({
         </header>
 
         <MessageList
+          key={messagesUrl}
           messages={messages}
           currentUserId={currentUserId}
           onToggleReaction={toggleReaction}
@@ -180,6 +237,9 @@ export function ChatView({
           onDelete={deleteMessage}
           onOpenThread={(m) => setThreadId(m.id)}
           onMarkUnread={markUnread}
+          mentionNames={mentionNames}
+          canModerate={canModerate}
+          canInteract={!channelId || joined}
           emptyState={
             <div className="px-4 pb-6">
               <div className="flex items-center gap-2 text-2xl font-bold">
@@ -205,12 +265,30 @@ export function ChatView({
           }
         />
 
-        <MessageComposer
-          placeholder={placeholder}
-          onSend={sendMessage}
-          workspaceId={workspaceId}
-          draftKey={messagesUrl}
-        />
+        {channelId && !joined ? (
+          <div className="flex shrink-0 flex-col items-center gap-2 border-t bg-muted/30 px-4 py-4 text-center sm:flex-row sm:justify-between sm:text-left">
+            <p className="text-sm text-muted-foreground">
+              You&apos;re viewing{" "}
+              <span className="font-semibold text-foreground">#{title}</span>.
+              Join to send messages.
+            </p>
+            <button
+              type="button"
+              onClick={joinChannel}
+              disabled={joining}
+              className="shrink-0 rounded-md bg-[#007a5a] px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-[#148567] disabled:opacity-60"
+            >
+              {joining ? "Joining…" : "Join channel"}
+            </button>
+          </div>
+        ) : (
+          <MessageComposer
+            placeholder={placeholder}
+            onSend={sendMessage}
+            workspaceId={workspaceId}
+            draftKey={messagesUrl}
+          />
+        )}
       </div>
 
       {channelId && (
@@ -228,6 +306,9 @@ export function ChatView({
           messageId={threadId}
           currentUserId={currentUserId}
           workspaceId={workspaceId}
+          mentionNames={mentionNames}
+          canModerate={canModerate}
+          canInteract={!channelId || joined}
           onClose={() => setThreadId(null)}
           onThreadChanged={() => mutate()}
         />

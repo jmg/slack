@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/user-avatar";
+import { InviteDialog } from "@/components/invite-dialog";
 import type { SidebarMember } from "@/lib/types";
 
 type ChannelMember = {
@@ -54,6 +55,7 @@ export function ChannelMembersDialog({
     open && workspaceId ? `/api/workspaces/${workspaceId}/members` : null,
   );
   const [query, setQuery] = useState("");
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [channelBusy, setChannelBusy] = useState(false);
   // Edited values override the server value only once the user types (avoids
@@ -176,6 +178,7 @@ export function ChannelMembersDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
@@ -255,10 +258,24 @@ export function ChannelMembersDialog({
         </div>
 
         <div className="border-t pt-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Add people
+            </span>
+            {workspaceId && (
+              <button
+                type="button"
+                onClick={() => setInviteOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium text-foreground transition hover:bg-accent"
+              >
+                <UserPlus className="size-3.5" /> Invite someone new
+              </button>
+            )}
+          </div>
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Add someone from the workspace…"
+            placeholder="Add someone already in the workspace…"
           />
           <div className="mt-2 max-h-40 overflow-y-auto">
             {addable.map((m) => (
@@ -276,7 +293,15 @@ export function ChannelMembersDialog({
             ))}
             {addable.length === 0 && (
               <p className="px-1 py-2 text-sm text-muted-foreground">
-                Everyone in the workspace is already here.
+                Everyone in the workspace is already here — use{" "}
+                <button
+                  type="button"
+                  onClick={() => setInviteOpen(true)}
+                  className="font-medium text-[#1264a3] hover:underline"
+                >
+                  Invite someone new
+                </button>{" "}
+                to bring in someone from outside.
               </p>
             )}
           </div>
@@ -312,5 +337,13 @@ export function ChannelMembersDialog({
         )}
       </DialogContent>
     </Dialog>
+    {workspaceId && (
+      <InviteDialog
+        workspaceId={workspaceId}
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+      />
+    )}
+    </>
   );
 }

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BRAND } from "@/lib/brand";
 
 type Mode = "login" | "register";
 
@@ -106,7 +107,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </>
         ) : (
           <>
-            New to Slack?{" "}
+            New to {BRAND}?{" "}
             <Link href={withNext("/register")} className="font-medium text-foreground underline-offset-4 hover:underline">
               Create an account
             </Link>

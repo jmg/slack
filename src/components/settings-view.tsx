@@ -1,17 +1,27 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Mail, ScrollText } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Mail,
+  ScrollText,
+  Shield,
+  UserMinus,
+  Sparkles,
+  CreditCard,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserAvatar } from "@/components/user-avatar";
 import { cn } from "@/lib/utils";
 import { CHAT_THEMES } from "@/lib/themes";
+import { PushToggle } from "@/components/push-toggle";
 
 /** Read an image file and re-encode it as a small square avatar data URL. */
 async function resizeToAvatar(file: File): Promise<string> {
@@ -48,6 +58,14 @@ export function SettingsView({
   userImage: string | null;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const b = searchParams.get("billing");
+    if (b === "success") toast.success("You're on the Team plan 🎉 thanks!");
+    else if (b === "cancel") toast.info("Checkout canceled — no charge was made.");
+    if (b) window.history.replaceState(null, "", `/w/${workspaceId}/settings`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const fileRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(userImage);
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -261,23 +279,23 @@ export function SettingsView({
                   type="button"
                   onClick={() => pickTheme(key)}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border p-2.5 text-left transition hover:bg-muted/50",
+                    "relative flex items-center gap-2.5 rounded-lg border p-2.5 pr-7 text-left transition hover:bg-muted/50",
                     selected ? "border-foreground ring-1 ring-foreground" : "border-border",
                   )}
                 >
                   <span
-                    className="flex size-9 shrink-0 items-center justify-center rounded-md"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-md"
                     style={{ backgroundColor: t.sidebar }}
                   >
                     <span
-                      className="size-3.5 rounded-full"
+                      className="size-3 rounded-full"
                       style={{ backgroundColor: t.active }}
                     />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">
                     {t.label}
                   </span>
-                  {selected && <Check className="size-4 shrink-0" />}
+                  {selected && <Check className="absolute right-2 top-1/2 size-4 -translate-y-1/2" />}
                 </button>
               );
             })}
@@ -307,7 +325,12 @@ export function SettingsView({
               </span>
             </span>
           </label>
+          <PushToggle />
         </section>
+
+        <BillingSection workspaceId={workspaceId} isAdmin={isAdmin} />
+
+        {isAdmin && <MembersSection workspaceId={workspaceId} />}
 
         {isAdmin && <AuditSection workspaceId={workspaceId} />}
 
@@ -332,6 +355,205 @@ export function SettingsView({
         </section>
       </div>
     </div>
+  );
+}
+
+type BillingInfo = {
+  plan: "free" | "team";
+  status: string | null;
+  currentPeriodEnd: string | null;
+  seats: number;
+  pricePerSeat: number;
+  monthlyTotal: number;
+  freeLimit: number;
+  configured: boolean;
+  isAdmin: boolean;
+  hasCustomer: boolean;
+};
+
+/** Plan + upgrade/manage. Visible to everyone; buttons are admin-only. */
+function BillingSection({ workspaceId, isAdmin }: { workspaceId: string; isAdmin: boolean }) {
+  const { data } = useSWR<BillingInfo>(`/api/workspaces/${workspaceId}/billing`);
+  const [busy, setBusy] = useState(false);
+
+  async function go(action: "checkout" | "portal") {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/billing/${action}`, {
+        method: "POST",
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error ?? "Something went wrong");
+      if (d.url) window.location.href = d.url;
+      else setBusy(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(false);
+    }
+  }
+
+  const team = data?.plan === "team";
+  return (
+    <section className="mt-6 rounded-lg border p-5">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <CreditCard className="size-4" /> Billing
+      </h2>
+      {!data ? (
+        <p className="mt-3 text-sm text-muted-foreground">Loading…</p>
+      ) : !data.configured ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Billing isn&apos;t set up on this instance.
+        </p>
+      ) : (
+        <div className="mt-4">
+          <p className="flex items-center gap-2 text-sm font-medium">
+            {team ? (
+              <>
+                Team plan
+                <span className="rounded-full bg-[#007a5a]/10 px-2 py-0.5 text-xs font-semibold text-[#007a5a]">
+                  {data.status ?? "active"}
+                </span>
+              </>
+            ) : (
+              "Free plan"
+            )}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {team
+              ? `$${data.pricePerSeat}/member · ${data.seats} members · about $${data.monthlyTotal}/mo`
+              : `${data.seats} of ${data.freeLimit} members used — upgrade for unlimited members, roles & priority support`}
+          </p>
+
+          {isAdmin ? (
+            <div className="mt-4">
+              {team ? (
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => go("portal")}>
+                  {busy ? "Opening…" : "Manage billing"}
+                </Button>
+              ) : (
+                <Button size="sm" disabled={busy} onClick={() => go("checkout")}>
+                  <Sparkles className="size-4" />{" "}
+                  {busy ? "Redirecting…" : `Upgrade to Team — $${data.pricePerSeat}/member/mo`}
+                </Button>
+              )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                Billed monthly per member. Cancel anytime.
+              </p>
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Ask a workspace admin to change the plan.
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+type WsMember = {
+  id: string;
+  name: string;
+  email: string;
+  image: string | null;
+  role: "ADMIN" | "MEMBER";
+  isMe: boolean;
+  online: boolean;
+};
+
+/** Admin-only: promote/demote and remove workspace members. */
+function MembersSection({ workspaceId }: { workspaceId: string }) {
+  const { data, mutate } = useSWR<WsMember[]>(`/api/workspaces/${workspaceId}/members`);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function setRole(m: WsMember, role: "ADMIN" | "MEMBER") {
+    setBusy(m.id);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members/${m.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error ?? "Could not update role");
+      toast.success(`${m.name} is now ${role === "ADMIN" ? "an admin" : "a member"}`);
+      void mutate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update role");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function remove(m: WsMember) {
+    if (!confirm(`Remove ${m.name} from this workspace?`)) return;
+    setBusy(m.id);
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members/${m.id}`, {
+        method: "DELETE",
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error ?? "Could not remove them");
+      toast.success(`${m.name} was removed`);
+      void mutate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove them");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-lg border p-5">
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <Shield className="size-4" /> Members &amp; roles
+      </h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Admins can rename the workspace, invite &amp; remove people, manage roles,
+        and delete anyone&apos;s messages.
+      </p>
+      <div className="mt-3">
+        {(!data || data.length === 0) && (
+          <p className="text-sm text-muted-foreground">No members yet.</p>
+        )}
+        {data?.map((m) => (
+          <div
+            key={m.id}
+            className="flex items-center gap-3 border-b py-2 last:border-0"
+          >
+            <UserAvatar name={m.name} image={m.image} className="size-8" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">
+                {m.name}
+                {m.isMe && <span className="text-muted-foreground"> (you)</span>}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">{m.email}</p>
+            </div>
+            <select
+              value={m.role}
+              disabled={m.isMe || busy === m.id}
+              onChange={(e) => setRole(m, e.target.value as "ADMIN" | "MEMBER")}
+              className="rounded-md border bg-background px-2 py-1 text-xs disabled:opacity-50"
+              title={m.isMe ? "You can't change your own role" : "Change role"}
+            >
+              <option value="MEMBER">Member</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+            {!m.isMe && (
+              <button
+                type="button"
+                onClick={() => remove(m)}
+                disabled={busy === m.id}
+                title="Remove from workspace"
+                className="rounded-md p-1.5 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+              >
+                <UserMinus className="size-4" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

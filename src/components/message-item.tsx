@@ -51,10 +51,18 @@ export function MessageItem({
   onOpenThread,
   onMarkUnread,
   hideThreadIndicator,
+  mentionNames,
+  canModerate,
+  canInteract = true,
 }: {
   message: SerializedMessage;
   showHeader: boolean;
   currentUserId: string;
+  mentionNames?: string[];
+  /** Current user is a workspace admin: can delete others' messages. */
+  canModerate?: boolean;
+  /** False when previewing a channel you haven't joined — hide hover actions. */
+  canInteract?: boolean;
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, body: string) => Promise<void>;
   onDelete?: (messageId: string) => void;
@@ -68,6 +76,13 @@ export function MessageItem({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.body);
   const [saving, setSaving] = useState(false);
+  // Keep the hover toolbar mounted while a menu is open. Otherwise moving the
+  // mouse off the message collapses the `group-hover:flex` container to
+  // display:none, the open popup loses its anchor, and Base UI re-positions it
+  // at the top-left corner (0,0).
+  const [reactionOpen, setReactionOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const menuOpen = reactionOpen || moreOpen;
 
   async function saveEdit() {
     const body = draft.trim();
@@ -94,8 +109,12 @@ export function MessageItem({
   return (
     <div
       id={`msg-${message.id}`}
+      // Focusable so a TAP reveals the action toolbar on touch devices (no hover):
+      // tapping the message focuses it → group-focus-within shows the actions,
+      // tapping elsewhere moves focus away and hides them again.
+      tabIndex={0}
       className={cn(
-        "group relative flex scroll-mt-16 gap-2 px-4 transition-colors hover:bg-muted/40",
+        "group relative flex scroll-mt-16 gap-2 px-4 outline-none transition-colors hover:bg-muted/40 focus-visible:bg-muted/40",
         showHeader ? "mt-2 pt-1.5" : "py-0.5",
       )}
     >
@@ -160,7 +179,7 @@ export function MessageItem({
           <>
             {message.body && (
               <div className="flex items-baseline gap-1">
-                <MessageBody body={message.body} />
+                <MessageBody body={message.body} mentionNames={mentionNames} />
                 {message.editedAt && (
                   <span className="text-[11px] text-muted-foreground">(edited)</span>
                 )}
@@ -221,16 +240,21 @@ export function MessageItem({
         )}
       </div>
 
-      {!editing && !deleted && (
-        <div className="absolute -top-3 right-3 hidden items-center rounded-md border bg-background shadow-sm group-hover:flex">
-          <DropdownMenu>
+      {!editing && !deleted && canInteract && (
+        <div
+          className={cn(
+            "absolute -top-3 right-3 items-center rounded-md border bg-background shadow-sm",
+            menuOpen ? "flex" : "hidden group-hover:flex group-focus-within:flex",
+          )}
+        >
+          <DropdownMenu open={reactionOpen} onOpenChange={setReactionOpen}>
             <DropdownMenuTrigger
               className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
               aria-label="Add reaction"
             >
               <SmilePlus className="size-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="flex gap-1 p-1">
+            <DropdownMenuContent align="end" className="flex w-auto gap-1 p-1">
               {EMOJIS.map((emoji) => (
                 <button
                   key={emoji}
@@ -256,8 +280,10 @@ export function MessageItem({
             </button>
           )}
 
-          {(!hideThreadIndicator || (isMine && (onEdit || onDelete))) && (
-            <DropdownMenu>
+          {(!hideThreadIndicator ||
+            (isMine && (onEdit || onDelete)) ||
+            (canModerate && onDelete)) && (
+            <DropdownMenu open={moreOpen} onOpenChange={setMoreOpen}>
               <DropdownMenuTrigger
                 className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 aria-label="More actions"
@@ -285,12 +311,13 @@ export function MessageItem({
                     <Pencil className="size-4" /> Edit message
                   </DropdownMenuItem>
                 )}
-                {isMine && onDelete && (
+                {(isMine || canModerate) && onDelete && (
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() => onDelete(message.id)}
                   >
-                    <Trash2 className="size-4" /> Delete message
+                    <Trash2 className="size-4" />{" "}
+                    {isMine ? "Delete message" : "Delete (admin)"}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>

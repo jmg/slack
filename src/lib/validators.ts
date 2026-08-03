@@ -33,6 +33,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const addWorkspaceMemberSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email"),
+});
+
 export const createWorkspaceSchema = z.object({
   name: z.string().trim().min(1, "Workspace name is required").max(80),
 });

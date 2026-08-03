@@ -47,6 +47,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   return handle(async () => {
+    assertSameOrigin(req);
     const user = await requireUser();
     const parsed = updateSchema.safeParse(await req.json().catch(() => null));
     if (!parsed.success) {
@@ -83,6 +84,39 @@ export async function DELETE(req: NextRequest) {
   return handle(async () => {
     assertSameOrigin(req);
     const user = await requireUser();
+
+    // Don't strand a workspace with no admin: for every workspace this user
+    // solely administers, promote the oldest remaining member before we drop
+    // their membership. (The members route's last-admin guard doesn't cover
+    // account deletion, so this is where we keep the invariant.)
+    const adminOf = await prisma.workspaceMember.findMany({
+      where: { userId: user.id, role: "ADMIN" },
+      select: { workspaceId: true },
+    });
+    for (const { workspaceId } of adminOf) {
+      const otherAdmins = await prisma.workspaceMember.count({
+        where: { workspaceId, role: "ADMIN", userId: { not: user.id } },
+      });
+      if (otherAdmins > 0) continue;
+      const successor = await prisma.workspaceMember.findFirst({
+        where: { workspaceId, userId: { not: user.id } },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, userId: true },
+      });
+      if (successor) {
+        await prisma.workspaceMember.update({
+          where: { id: successor.id },
+          data: { role: "ADMIN" },
+        });
+        recordAudit({
+          action: "workspace.role_promote",
+          actorId: user.id,
+          workspaceId,
+          targetType: "user",
+          targetId: successor.userId,
+        });
+      }
+    }
 
     const scrubbedHash = await hashPassword(randomBytes(32).toString("hex"));
 
