@@ -52,6 +52,29 @@ npm run dev                     # http://localhost:3000
 Demo accounts (password `password123`): `ada@`, `alan@`, `grace@`,
 `linus@acme.test`.
 
+## Also in this repo: a WhatsApp clone
+
+The same codebase serves a second, independent app — 1:1 and group chats, replies,
+reactions, read receipts, 24-hour status updates, contacts and blocking. It lives
+under `/wpp` (pages) and `/api/wpp` (routes), and `src/proxy.ts` folds any
+`wpp.*` hostname into that route tree, so `wpp.talkaroo.app/` and
+`localhost:3000/wpp` are the same pages.
+
+It shares the database and `AUTH_SECRET` with the Slack app and **nothing else**:
+its own `Wa*` tables, its own identity (a phone number, not an email), its own
+session cookie, its own SSE bus.
+
+```sh
+npm run db:push                 # the Wa* tables are in the same schema
+npm run db:seed:wpp             # demo accounts, chats, a group and statuses
+npm run dev                     # http://localhost:3000/wpp
+```
+
+Demo accounts (password `talkaroo2026`): `+5491100000001` … `+5491100000005`.
+Start with the first one — the unread counts and read-receipt states are
+arranged around it. Both seeds are independent; running one leaves the other
+app's data alone.
+
 ## Scripts
 
 | Script | Purpose |
@@ -61,6 +84,7 @@ Demo accounts (password `password123`): `ada@`, `alan@`, `grace@`,
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run db:push` | Sync Prisma schema to the database |
 | `npm run db:seed` | Load the demo workspace |
+| `npm run db:seed:wpp` | Load the WhatsApp clone's demo data |
 | `npm run db:studio` | Prisma Studio |
 | `npm run db:dev` | Prisma's local Postgres server |
 
@@ -69,6 +93,7 @@ Demo accounts (password `password123`): `ada@`, `alan@`, `grace@`,
 ```
 prisma/schema.prisma      data model (users, workspaces, channels, DMs, messages, reactions)
 prisma/seed.ts            demo data
+prisma/wpp-seed.ts        demo data for the WhatsApp clone
 src/lib/                  prisma client, auth/session, validators, data access
 src/app/api/              route handlers (auth, workspaces, channels, messages, reactions)
 src/app/(auth)/           login / register
@@ -80,4 +105,6 @@ src/components/           UI (sidebar, chat view, message list, composer, dialog
 
 See [DEPLOY.md](./DEPLOY.md) — the app ships a `Dockerfile` and `Procfile` and
 deploys on a [shipdeck](https://) platform with a Postgres addon and automatic
-HTTPS custom domains.
+HTTPS custom domains. Both apps ship in that one deploy;
+[DEPLOY-WPP.md](./DEPLOY-WPP.md) covers what the `wpp.talkaroo.app` subdomain
+adds on top.

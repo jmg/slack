@@ -140,3 +140,245 @@
 .permalink-flash {
   animation: permalink-flash 2s ease-out;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   WhatsApp clone (/wpp) — scoped design tokens.
+
+   Everything is namespaced under `.wpp-root`, the single wrapper the /wpp
+   layout renders, so the Slack half above is untouched. Two things happen in
+   that scope:
+
+   1. `--wa-*` tokens define the WhatsApp palette (bubbles, ticks, panels).
+   2. shadcn's own tokens (--background, --popover, --border, …) are remapped
+      onto it, so ui/ primitives — dialogs, menus, inputs — inherit the theme
+      instead of staying Slack-light inside a dark WhatsApp window.
+
+   Dark mode is `.wpp-root.dark`, applied server-side for an explicit choice and
+   by the pre-paint script in the layout for "system". That class name matters:
+   the `dark` custom variant declared at the top of this file is
+   `&:is(.dark *)`, so Tailwind's `dark:` utilities work inside it too.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.wpp-root {
+  --wa-green: #00a884;
+  --wa-green-deep: #008069;
+  /*
+   * Hover for a primary button. It goes *darker*, not lighter, in both themes:
+   * the label on these buttons is white, and lightening towards --wa-green
+   * would drop it to ~3:1 — below AA for 14px text. This keeps ~6:1.
+   * (--wa-green stays the accent for icons, rings and text, never a surface
+   * under white type.)
+   */
+  --wa-green-hover: #006e5a;
+  --wa-green-ink: #ffffff;
+
+  --wa-app: #f0f2f5;
+  --wa-panel: #ffffff;
+  --wa-header: #f0f2f5;
+  --wa-chat: #efeae2;
+  --wa-input: #ffffff;
+
+  --wa-bubble-in: #ffffff;
+  --wa-bubble-out: #d9fdd3;
+  --wa-bubble-shadow: 0 1px 0.5px rgb(11 20 26 / 0.13);
+
+  --wa-text: #111b21;
+  --wa-text-dim: #667781;
+  --wa-text-faint: #8696a0;
+  --wa-link: #027eb5;
+
+  --wa-border: #e9edef;
+  --wa-divider: #d1d7db;
+  --wa-hover: #f5f6f6;
+  --wa-active: #f0f2f5;
+  --wa-selected: #f0f2f5;
+
+  --wa-tick: #8696a0;
+  --wa-tick-read: #53bdeb;
+  --wa-badge: #25d366;
+  --wa-badge-ink: #ffffff;
+
+  --wa-chip: #ffffff;
+  --wa-chip-ink: #54656f;
+  --wa-system: #ffeecd;
+  --wa-system-ink: #5e5744;
+  --wa-quote: rgb(11 20 26 / 0.06);
+
+  /* Faint pen-drawn tile behind the conversation, like the real wallpaper. */
+  --wa-doodle-opacity: 0.045;
+  --wa-doodle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='30' cy='28' r='9'/%3E%3Cpath d='M70 20h18v18H70z'/%3E%3Cpath d='M118 34c6-14 20-14 24 0 4-14 18-14 24 0-6 12-18 20-24 24-6-4-18-12-24-24z'/%3E%3Cpath d='M196 18l10 18h-20z'/%3E%3Cpath d='M16 74c8-10 20-10 28 0'/%3E%3Cpath d='M62 66v24M50 78h24'/%3E%3Ccircle cx='112' cy='78' r='11'/%3E%3Cpath d='M108 78l3 4 6-8'/%3E%3Cpath d='M158 64h30v20h-12l-6 8v-8h-12z'/%3E%3Cpath d='M212 68c10 4 10 18 0 22'/%3E%3Cpath d='M22 120h26v18H22z'/%3E%3Cpath d='M28 120v-6h14v6'/%3E%3Cpath d='M74 116c10 0 16 8 16 14s-6 14-16 14-16-8-16-14 6-14 16-14z'/%3E%3Cpath d='M116 132l10-14 10 14M116 132h20'/%3E%3Cpath d='M162 118v22M154 126l8-8 8 8'/%3E%3Ccircle cx='206' cy='128' r='10'/%3E%3Cpath d='M206 122v6l4 3'/%3E%3Cpath d='M18 170c10-8 20 8 30 0'/%3E%3Cpath d='M66 162h24v20H66zM72 170h12M72 176h8'/%3E%3Cpath d='M114 182l6-22 6 22'/%3E%3Cpath d='M156 164a10 10 0 1 0 0 20 10 10 0 1 0 0-20zM156 164v10h9'/%3E%3Cpath d='M196 176c6-10 18-10 20 2'/%3E%3Cpath d='M26 210c8 6 18 6 26 0'/%3E%3Cpath d='M70 204l8 12 8-12'/%3E%3Ccircle cx='120' cy='212' r='8'/%3E%3Cpath d='M158 204h24v14h-24z'/%3E%3Cpath d='M204 202v20M196 212h16'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* shadcn tokens, remapped so ui/ primitives follow the WhatsApp theme. */
+  --background: var(--wa-panel);
+  --foreground: var(--wa-text);
+  --card: var(--wa-panel);
+  --card-foreground: var(--wa-text);
+  --popover: var(--wa-panel);
+  --popover-foreground: var(--wa-text);
+  --primary: var(--wa-green);
+  --primary-foreground: var(--wa-green-ink);
+  --secondary: var(--wa-app);
+  --secondary-foreground: var(--wa-text);
+  --muted: var(--wa-app);
+  --muted-foreground: var(--wa-text-dim);
+  --accent: var(--wa-hover);
+  --accent-foreground: var(--wa-text);
+  --border: var(--wa-border);
+  --input: var(--wa-divider);
+  --ring: var(--wa-green);
+  --radius: 0.5rem;
+
+  color: var(--wa-text);
+  background-color: var(--wa-app);
+}
+
+.wpp-root.dark {
+  --wa-green: #00a884;
+  /*
+   * The surface primary buttons and the sign-in band sit on, so it has to stay
+   * dark enough for white text in both themes (~5:1 here). It is deliberately
+   * NOT the outgoing-bubble green — that one is `--wa-bubble-out`, and it is far
+   * too dark to double as a control.
+   */
+  --wa-green-deep: #017561;
+  --wa-green-hover: #016352;
+  --wa-green-ink: #111b21;
+
+  --wa-app: #111b21;
+  --wa-panel: #111b21;
+  --wa-header: #202c33;
+  --wa-chat: #0b141a;
+  --wa-input: #2a3942;
+
+  --wa-bubble-in: #202c33;
+  --wa-bubble-out: #005c4b;
+  --wa-bubble-shadow: 0 1px 0.5px rgb(11 20 26 / 0.35);
+
+  --wa-text: #e9edef;
+  --wa-text-dim: #8696a0;
+  --wa-text-faint: #667781;
+  --wa-link: #53bdeb;
+
+  --wa-border: #222d34;
+  --wa-divider: #2a3942;
+  --wa-hover: #202c33;
+  --wa-active: #2a3942;
+  --wa-selected: #2a3942;
+
+  --wa-tick: #8696a0;
+  --wa-tick-read: #53bdeb;
+  --wa-badge: #00a884;
+  --wa-badge-ink: #111b21;
+
+  --wa-chip: #182229;
+  --wa-chip-ink: #8696a0;
+  --wa-system: #182229;
+  --wa-system-ink: #ffd279;
+  --wa-quote: rgb(255 255 255 / 0.06);
+
+  --wa-doodle-opacity: 0.03;
+  --wa-doodle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='30' cy='28' r='9'/%3E%3Cpath d='M70 20h18v18H70z'/%3E%3Cpath d='M118 34c6-14 20-14 24 0 4-14 18-14 24 0-6 12-18 20-24 24-6-4-18-12-24-24z'/%3E%3Cpath d='M196 18l10 18h-20z'/%3E%3Cpath d='M16 74c8-10 20-10 28 0'/%3E%3Cpath d='M62 66v24M50 78h24'/%3E%3Ccircle cx='112' cy='78' r='11'/%3E%3Cpath d='M108 78l3 4 6-8'/%3E%3Cpath d='M158 64h30v20h-12l-6 8v-8h-12z'/%3E%3Cpath d='M212 68c10 4 10 18 0 22'/%3E%3Cpath d='M22 120h26v18H22z'/%3E%3Cpath d='M28 120v-6h14v6'/%3E%3Cpath d='M74 116c10 0 16 8 16 14s-6 14-16 14-16-8-16-14 6-14 16-14z'/%3E%3Cpath d='M116 132l10-14 10 14M116 132h20'/%3E%3Cpath d='M162 118v22M154 126l8-8 8 8'/%3E%3Ccircle cx='206' cy='128' r='10'/%3E%3Cpath d='M206 122v6l4 3'/%3E%3Cpath d='M18 170c10-8 20 8 30 0'/%3E%3Cpath d='M66 162h24v20H66zM72 170h12M72 176h8'/%3E%3Cpath d='M114 182l6-22 6 22'/%3E%3Cpath d='M156 164a10 10 0 1 0 0 20 10 10 0 1 0 0-20zM156 164v10h9'/%3E%3Cpath d='M196 176c6-10 18-10 20 2'/%3E%3Cpath d='M26 210c8 6 18 6 26 0'/%3E%3Cpath d='M70 204l8 12 8-12'/%3E%3Ccircle cx='120' cy='212' r='8'/%3E%3Cpath d='M158 204h24v14h-24z'/%3E%3Cpath d='M204 202v20M196 212h16'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Per-user chat wallpaper — keys mirror WPP_WALLPAPERS in lib/wpp/config.ts. */
+.wpp-root[data-wallpaper="plain"] { --wa-chat: #f7f5f3; }
+.wpp-root[data-wallpaper="sage"] { --wa-chat: #e4ebe4; }
+.wpp-root[data-wallpaper="sand"] { --wa-chat: #f2e9dd; }
+.wpp-root[data-wallpaper="slate"] { --wa-chat: #e6ecef; }
+.wpp-root[data-wallpaper="rose"] { --wa-chat: #f6e7e7; }
+.wpp-root.dark[data-wallpaper="plain"] { --wa-chat: #111b21; }
+.wpp-root.dark[data-wallpaper="sage"] { --wa-chat: #0d1a14; }
+.wpp-root.dark[data-wallpaper="sand"] { --wa-chat: #1a140d; }
+.wpp-root.dark[data-wallpaper="slate"] { --wa-chat: #0e1519; }
+.wpp-root.dark[data-wallpaper="rose"] { --wa-chat: #1c1113; }
+
+/* The conversation background: flat colour + the doodle tile on top of it. */
+.wa-wallpaper {
+  position: relative;
+  background-color: var(--wa-chat);
+  isolation: isolate;
+}
+.wa-wallpaper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--wa-doodle);
+  background-repeat: repeat;
+  opacity: var(--wa-doodle-opacity);
+  pointer-events: none;
+}
+
+/*
+ * Bubble tail. WhatsApp draws it only on the first bubble of a run from the
+ * same sender, which is why it's a modifier class rather than baked into the
+ * bubble: consecutive messages tuck under the first one with no tail.
+ */
+.wa-bubble-tail-out::after,
+.wa-bubble-tail-in::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 13px;
+  background-color: inherit;
+}
+.wa-bubble-tail-out::after {
+  right: -8px;
+  clip-path: polygon(0 0, 0 100%, 100% 0);
+}
+.wa-bubble-tail-in::after {
+  left: -8px;
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+}
+
+/* Slim scrollbars, like the WhatsApp Web panels. */
+.wa-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--wa-divider) transparent;
+  overscroll-behavior: contain;
+}
+.wa-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.wa-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--wa-divider);
+  border-radius: 3px;
+}
+.wa-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* The three-dot "typing…" animation next to a contact's name. */
+@keyframes wa-typing-dot {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
+.wa-typing-dot {
+  animation: wa-typing-dot 1.2s infinite ease-in-out;
+}
+
+/* Recording indicator on the composer. */
+@keyframes wa-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.wa-pulse {
+  animation: wa-pulse 1.4s infinite ease-in-out;
+}
+
+/* Status ring around an avatar with unseen updates. */
+.wa-status-ring {
+  background: conic-gradient(var(--wa-green) 0 100%);
+}
+.wa-status-ring[data-seen="true"] {
+  background: conic-gradient(var(--wa-divider) 0 100%);
+}
+
+/* Message text: preserve the author's line breaks, break long URLs. */
+.wa-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

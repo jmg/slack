@@ -304,3 +304,461 @@ model LinkPreview {
   siteName    String?
   fetchedAt   DateTime @default(now())
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WhatsApp clone — the second app in this repo, served at /wpp and on the
+// wpp.talkaroo.app subdomain (see src/middleware.ts).
+//
+// Everything below is prefixed `Wa` and shares *nothing* with the Slack models
+// above: a separate identity (phone number, not email), a separate session
+// cookie, a separate SSE bus. Same database, same Prisma client — two products.
+// ═══════════════════════════════════════════════════════════════════════════
+
+enum WaChatType {
+  DIRECT
+  GROUP
+}
+
+enum WaMemberRole {
+  MEMBER
+  ADMIN
+}
+
+enum WaMessageKind {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  VOICE
+  DOCUMENT
+  SYSTEM
+  POLL
+}
+
+/// Who may see a piece of profile data. Mirrors WhatsApp's privacy options.
+enum WaVisibility {
+  EVERYONE
+  CONTACTS
+  NOBODY
+}
+
+enum WaStatusKind {
+  TEXT
+  IMAGE
+  VIDEO
+}
+
+enum WaAttachmentPurpose {
+  MESSAGE
+  AVATAR
+  GROUP_ICON
+  STATUS
+}
+
+/// A WhatsApp account. Identity is the phone number in E.164 form — there is no
+/// email anywhere in this half of the app.
+model WaUser {
+  id           String  @id @default(cuid())
+  /// E.164, e.g. "+541123456789". Normalised by lib/wpp/phone.ts before write.
+  phone        String  @unique
+  name         String
+  about        String  @default("Hey there! I am using Talkaroo.")
+  passwordHash String
+  avatarUrl    String?
+  /// Bumped to kill every outstanding session (logout-everywhere, password
+  /// change). Same revocation trick as the Slack half — see lib/wpp/auth.ts.
+  tokenVersion Int     @default(0)
+
+  /// UI language: "en" | "es". Server-rendered pages read this; the cookie is
+  /// only a pre-login fallback (see lib/wpp/i18n.ts).
+  locale    String @default("en")
+  /// "light" | "dark" | "system".
+  theme     String @default("system")
+  /// Chat background key (see lib/wpp/wallpapers.ts).
+  wallpaper String @default("default")
+
+  /// Heartbeat from the client; drives "online" / "last seen today at …".
+  lastSeenAt DateTime?
+
+  // ── Privacy (Settings → Privacy) ────────────────────────────────────────
+  lastSeenPrivacy WaVisibility @default(EVERYONE)
+  avatarPrivacy   WaVisibility @default(EVERYONE)
+  aboutPrivacy    WaVisibility @default(EVERYONE)
+  /// Off ⇒ we never expose this user's read cursor *and* never show them
+  /// anyone else's blue ticks. Reciprocal, exactly like WhatsApp.
+  readReceipts    Boolean      @default(true)
+
+  /// Set on account deletion: PII scrubbed, can never authenticate again.
+  deactivatedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  memberships    WaChatMember[]
+  messages       WaMessage[]
+  reactions      WaReaction[]
+  stars          WaMessageStar[]
+  hiddenMessages WaMessageHide[]
+  attachments    WaAttachment[]
+  createdChats   WaChat[]        @relation("WaChatCreator")
+  contacts       WaContact[]     @relation("WaContactOwner")
+  contactOf      WaContact[]     @relation("WaContactTarget")
+  blocksMade     WaBlock[]       @relation("WaBlocker")
+  blockedBy      WaBlock[]       @relation("WaBlocked")
+  statuses       WaStatus[]
+  statusViews    WaStatusView[]
+  mentions       WaMention[]
+  pollVotes      WaPollVote[]
+  pinnedMessages WaMessage[]     @relation("WaMessagePinner")
+
+  @@index([lastSeenAt])
+}
+
+/// A 1:1 chat or a group. There is no "workspace" — a chat is the top-level
+/// container, exactly like the real thing.
+model WaChat {
+  id   String     @id @default(cuid())
+  type WaChatType
+
+  // Group-only attributes; all null for a DIRECT chat.
+  subject     String?
+  description String?
+  iconUrl     String?
+
+  /// Stable dedupe key for DIRECT chats: the two user ids sorted and joined
+  /// with ":". Unique, so two people can never end up with two 1:1 chats even
+  /// if both tap "message" at the same instant. Null for groups.
+  directKey String? @unique
+
+  createdById String?
+  /// Group invite link token ("chat.whatsapp.com/<token>"). Rotatable.
+  inviteToken String? @unique
+
+  onlyAdminsCanSend     Boolean @default(false)
+  onlyAdminsCanEditInfo Boolean @default(true)
+
+  /// Disappearing messages: how long a *new* message survives, in seconds.
+  /// Null = off. Applied at send time to `WaMessage.expiresAt` rather than
+  /// evaluated per read, so changing the timer never retroactively deletes
+  /// history that was sent under the old setting — which is exactly how
+  /// WhatsApp behaves.
+  disappearingSeconds Int?
+
+  /// Denormalised sort key for the chat list — kept in step on every send so
+  /// listing N chats never needs N message subqueries.
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  createdBy   WaUser?        @relation("WaChatCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  members     WaChatMember[]
+  messages    WaMessage[]
+  attachments WaAttachment[]
+
+  @@index([lastMessageAt])
+  @@index([createdById])
+}
+
+/// One participant's view of a chat: their role, their read cursor, and all the
+/// per-user chat state WhatsApp keeps (pinned / archived / muted / cleared).
+model WaChatMember {
+  id     String       @id @default(cuid())
+  chatId String
+  userId String
+  role   WaMemberRole @default(MEMBER)
+  joinedAt DateTime   @default(now())
+  /// Set when the member leaves or is removed. The row is kept so their old
+  /// messages still resolve a sender and the system messages make sense.
+  leftAt   DateTime?
+
+  /// Read cursor — anything newer is unread. Also what turns *other people's*
+  /// ticks blue, but only when this user has readReceipts on.
+  lastReadAt      DateTime  @default(now())
+  /// Delivery cursor — advanced whenever this user's client is connected.
+  lastDeliveredAt DateTime  @default(now())
+
+  pinnedAt   DateTime?
+  archivedAt DateTime?
+  /// Muted until this instant; far-future for "always".
+  mutedUntil DateTime?
+  /// "Clear chat" — hide everything created at or before this instant, for
+  /// this user only. Never deletes rows (the other side keeps their history).
+  clearedAt  DateTime?
+  /// Unsent composer text, restored when the chat is reopened.
+  draft      String?
+
+  chat WaChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user WaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+  @@index([userId, archivedAt])
+}
+
+model WaMessage {
+  id       String        @id @default(cuid())
+  chatId   String
+  /// Null for SYSTEM messages ("Ada created this group").
+  senderId String?
+  kind     WaMessageKind @default(TEXT)
+  body     String        @default("")
+
+  /// Quoted message (WhatsApp "reply"). SetNull so deleting the quoted message
+  /// doesn't cascade away every reply to it.
+  replyToId String?
+
+  /// 0 = original. 1 = "Forwarded". 4+ renders as "Forwarded many times",
+  /// matching WhatsApp's escalation.
+  forwardScore Int @default(0)
+
+  /// SYSTEM messages carry a machine-readable action + JSON meta instead of a
+  /// body, so the same row renders in English or Spanish per viewer.
+  systemAction String?
+  systemMeta   String?
+
+  editedAt  DateTime?
+  /// "Delete for everyone" — tombstoned, body blanked on serialize, so replies
+  /// that quote it still resolve.
+  deletedAt DateTime?
+  /// Set at send time when the chat has a disappearing timer. Past this instant
+  /// the message is filtered out of every read and swept by the cleanup in
+  /// lib/wpp/disappearing.ts.
+  expiresAt DateTime?
+  /// Pinned to the top of the chat, for everyone. WhatsApp allows several pins
+  /// per chat, so this is a column on the message rather than one on the chat.
+  pinnedAt   DateTime?
+  pinnedById String?
+  createdAt DateTime  @default(now())
+
+  chat        WaChat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender      WaUser?         @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  replyTo     WaMessage?      @relation("WaReply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies     WaMessage[]     @relation("WaReply")
+  pinnedBy    WaUser?         @relation("WaMessagePinner", fields: [pinnedById], references: [id], onDelete: SetNull)
+  reactions   WaReaction[]
+  attachments WaAttachment[]
+  stars       WaMessageStar[]
+  hides       WaMessageHide[]
+  mentions    WaMention[]
+  poll        WaPoll?
+
+  @@index([chatId, createdAt])
+  @@index([senderId])
+  @@index([replyToId])
+  @@index([expiresAt])
+  @@index([chatId, pinnedAt])
+  @@index([pinnedById])
+}
+
+/// Someone named with `@` in a message.
+///
+/// Stored rather than re-derived by substring-matching the body: names change,
+/// two people in a group can share a first name, and the unread `@` badge has to
+/// be a cheap indexed count rather than a scan of every message body.
+model WaMention {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  message WaMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    WaUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId, createdAt])
+}
+
+/// A poll. One per message, and the message's `kind` is POLL.
+model WaPoll {
+  id            String    @id @default(cuid())
+  messageId     String    @unique
+  question      String
+  /// WhatsApp lets the author decide whether voters may pick more than one.
+  allowMultiple Boolean   @default(false)
+  /// Set when the author stops the poll; votes are frozen but stay visible.
+  closedAt      DateTime?
+  createdAt     DateTime  @default(now())
+
+  message WaMessage      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  options WaPollOption[]
+}
+
+model WaPollOption {
+  id       String @id @default(cuid())
+  pollId   String
+  text     String
+  /// Display order, fixed at creation so the list never reshuffles under a voter.
+  position Int
+
+  poll  WaPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes WaPollVote[]
+
+  @@index([pollId, position])
+}
+
+model WaPollVote {
+  id        String   @id @default(cuid())
+  optionId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  option WaPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user   WaUser       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([optionId, userId])
+  @@index([userId])
+}
+
+/// WhatsApp allows exactly one reaction per person per message — hence the
+/// unique on (messageId, userId) rather than (messageId, userId, emoji).
+model WaReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message WaMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    WaUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
+}
+
+model WaMessageStar {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  message WaMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    WaUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId, createdAt])
+}
+
+/// "Delete for me": the row survives for everyone else, this user stops seeing
+/// it. Distinct from WaMessage.deletedAt ("delete for everyone").
+model WaMessageHide {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  message WaMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    WaUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
+}
+
+/// Media on a message or a status. Same two-phase upload as the Slack half:
+/// created pending (messageId null) and claimed inside the send transaction.
+model WaAttachment {
+  id          String  @id @default(cuid())
+  /// Object key: "wa/<chatId|u/userId>/<uuid><ext>". Charset-safe so the signed
+  /// URL never needs percent-encoding.
+  ///
+  /// Deliberately *not* unique: forwarding a photo creates a second row that
+  /// points at the same stored object rather than copying tens of megabytes.
+  /// `deleteWaAttachment` therefore ref-counts on this column before removing
+  /// anything from the bucket.
+  key         String
+  filename    String
+  contentType String
+  size        Int
+  width       Int?
+  height      Int?
+  /// Audio/video length, for the "0:07" label on a voice note.
+  durationMs  Int?
+  /// Voice-note waveform: comma-separated 0-100 amplitude samples, drawn as the
+  /// bar chart inside the bubble.
+  waveform    String?
+
+  /// What this upload is for. Drives authorization in /api/wpp/files/[id]:
+  /// message media needs chat membership, a profile photo or group icon is
+  /// readable by any signed-in account (its id is unguessable and privacy is
+  /// enforced when deciding whether to hand the URL out at all), and status
+  /// media follows the status's own visibility.
+  purpose    WaAttachmentPurpose @default(MESSAGE)
+
+  /// Null while pending, set when the message is sent (same transaction).
+  messageId  String?
+  /// Null for profile and status media, which aren't scoped to a chat.
+  chatId     String?
+  uploaderId String
+  createdAt  DateTime @default(now())
+
+  message  WaMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  chat     WaChat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  uploader WaUser     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  status   WaStatus?
+
+  @@index([messageId])
+  @@index([uploaderId, messageId])
+  @@index([chatId])
+  @@index([key])
+}
+
+/// A saved contact. WhatsApp shows the *saved* name for people in your address
+/// book and the raw phone number for everyone else — `alias` is that name.
+model WaContact {
+  id        String   @id @default(cuid())
+  ownerId   String
+  contactId String
+  alias     String?
+  createdAt DateTime @default(now())
+
+  owner   WaUser @relation("WaContactOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  contact WaUser @relation("WaContactTarget", fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, contactId])
+  @@index([contactId])
+}
+
+/// A blocked contact: they can't message you and can't see your presence.
+model WaBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker WaUser @relation("WaBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked WaUser @relation("WaBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+/// A 24-hour "Status" (Estado). Expired rows are filtered on read and swept by
+/// the cleanup in lib/wpp/status.ts — never shown past `expiresAt`.
+model WaStatus {
+  id              String       @id @default(cuid())
+  userId          String
+  kind            WaStatusKind @default(TEXT)
+  body            String       @default("")
+  /// Background for a TEXT status (one of the WhatsApp palette keys).
+  backgroundColor String?
+  attachmentId    String?      @unique
+  createdAt       DateTime     @default(now())
+  expiresAt       DateTime
+
+  user       WaUser         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attachment WaAttachment?  @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
+  views      WaStatusView[]
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model WaStatusView {
+  id       String   @id @default(cuid())
+  statusId String
+  viewerId String
+  viewedAt DateTime @default(now())
+
+  status WaStatus @relation(fields: [statusId], references: [id], onDelete: Cascade)
+  viewer WaUser   @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([statusId, viewerId])
+  @@index([viewerId])
+}
