@@ -104,7 +104,7 @@ src/components/           UI (sidebar, chat view, message list, composer, dialog
 ## Deployment
 
 See [DEPLOY.md](./DEPLOY.md) — the app ships a `Dockerfile` and `Procfile` and
-deploys on a [shipdeck](https://) platform with a Postgres addon and automatic
+deploys on a [deploycloud](../deploycloud) platform with a Postgres addon and automatic
 HTTPS custom domains. Both apps ship in that one deploy;
 [DEPLOY-WPP.md](./DEPLOY-WPP.md) covers what the `wpp.talkaroo.app` subdomain
 adds on top.

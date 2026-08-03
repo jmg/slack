@@ -193,7 +193,8 @@ the container, the database and `src/components/ui/*`.
 - End-to-end tests: **`e2e/`** (Playwright). See the Commands section.
 
 ## Deployment
-Ships a `Dockerfile` + `Procfile` for the "shipdeck" platform (see `DEPLOY.md`).
+Ships a `Dockerfile` + `Procfile` for the **deploycloud** platform (see
+`DEPLOY.md`; the CLI lives at `/home/jm/DESARROLLO/deploycloud/bin/deploycloud.mjs`).
 `web` = `next start`; `release` runs `prisma migrate deploy` before traffic
 shifts, so **migrations must be forward-only and idempotent**. Health check:
 `GET /api/health`. Runtime env: `DATABASE_URL` (Postgres addon) + `AUTH_SECRET`;
