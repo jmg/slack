@@ -4,15 +4,9 @@ import { apiError, handle } from "@/lib/api";
 import { assertSameOrigin } from "@/lib/csrf";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { recordAudit } from "@/lib/audit";
+import { dummyPasswordHash } from "@/lib/password";
 import { createWaSession, verifyWaPassword } from "@/lib/wpp/auth";
 import { waLoginSchema } from "@/lib/wpp/validators";
-
-/**
- * A constant, valid bcrypt hash. When the number isn't registered we still run
- * a compare against this so the miss path costs about the same as a hit —
- * otherwise response timing tells an attacker which phone numbers have accounts.
- */
-const DUMMY_HASH = "$2b$10$vq1BE/aRFCfsBRDVMbeUG.8DblfLLYm9uiCKi0ryjpCLUwPb.YLVO";
 
 const WINDOW_MS = 15 * 60 * 1000;
 
@@ -41,9 +35,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await prisma.waUser.findUnique({ where: { phone } });
+    // Resolved together so the miss path never pays for the dummy hash on top
+    // of its compare — see dummyPasswordHash().
+    const [user, dummyHash] = await Promise.all([
+      prisma.waUser.findUnique({ where: { phone } }),
+      dummyPasswordHash(),
+    ]);
     // Exactly one compare on every path (real hash or dummy) keeps timing flat.
-    const ok = await verifyWaPassword(password, user?.passwordHash ?? DUMMY_HASH);
+    const ok = await verifyWaPassword(password, user?.passwordHash ?? dummyHash);
     if (!user || !ok || user.deactivatedAt) {
       return apiError("auth.invalidCredentials", 401);
     }

@@ -21,8 +21,13 @@ demo data loaded:
 docker compose up -d          # Postgres (or: npm run db:dev)
 npm run prisma:generate       # src/generated/prisma is gitignored
 npm run db:push               # create the tables
+
+# The seed generates a password per run unless you pick one. The suite needs to
+# know it, so pick one — and use the same value for both commands.
+export WPP_SEED_PASSWORD='pick-something-long'
 npm run db:seed:wpp           # the five demo accounts, chats and the group
-npx playwright install --with-deps chromium   # the browser binary
+
+npx playwright install chromium   # the browser binary
 ```
 
 plus a `.env` with:
@@ -31,6 +36,13 @@ plus a `.env` with:
 DATABASE_URL=postgresql://…              # the same database the seed wrote to
 AUTH_SECRET=<at least 32 characters>     # sessions are HS256-signed with it
 ```
+
+`WPP_SEED_PASSWORD` must be exported when you run the tests too, not only when
+you seed — the fixtures fail with an explicit message if it is missing.
+
+> `npx playwright install --with-deps chromium` shells out to `sudo apt-get`. On
+> a machine without a passwordless sudo prompt, drop `--with-deps`; the plain
+> form downloads the browser fine.
 
 `npm run db:seed:wpp` is idempotent — it upserts by unique key and replays each
 demo chat's history — so re-running it is the way to get back to a known state.

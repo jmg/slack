@@ -30,8 +30,15 @@ export { expect };
 /** Same default as `playwright.config.ts` — both read the one env var. */
 export const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
-/** The password every demo account shares (see `prisma/wpp-seed.ts`). */
-export const SEED_PASSWORD = "talkaroo2026";
+/**
+ * The password every demo account shares.
+ *
+ * The seed generates a fresh one per run unless `WPP_SEED_PASSWORD` is set, so
+ * the suite requires that variable and expects the database to have been seeded
+ * with the same value. Read at module scope but validated at sign-in time —
+ * throwing here would break `playwright test --list`.
+ */
+export const SEED_PASSWORD = process.env.WPP_SEED_PASSWORD ?? "";
 
 /**
  * The five demo accounts, mirrored from `prisma/wpp-seed.ts`.
@@ -97,6 +104,15 @@ export const test = base.extend<WaFixtures, WaWorkerFixtures>({
       const cache = new Map<SeedAccount, Promise<string>>();
 
       async function signIn(account: SeedAccount): Promise<string> {
+        if (!SEED_PASSWORD) {
+          throw new Error(
+            "WPP_SEED_PASSWORD is not set. Seed the database with a known " +
+              "password and pass the same one to the tests:\n" +
+              "  WPP_SEED_PASSWORD=<password> npm run db:seed:wpp\n" +
+              "  WPP_SEED_PASSWORD=<password> npm run test:e2e\n" +
+              "See e2e/README.md.",
+          );
+        }
         const request = await playwright.request.newContext({
           baseURL: BASE_URL,
         });

@@ -161,14 +161,16 @@ Forward-only — never edit an applied migration, add a new one.
 
 ```sh
 deploycloud env slack ALLOW_PROD_SEED=true
-deploycloud run slack npm run db:seed:wpp
+deploycloud run slack npm run db:seed:wpp     # prints the generated password
 deploycloud env slack --unset ALLOW_PROD_SEED
 ```
 
-Creates five accounts on the fake `+54 9 11 0000 000x` range (password
-`talkaroo2026`), their chats, a group, and 24-hour status updates. The seed
-upserts by unique key, so it is safe to re-run; `ALLOW_PROD_SEED` is required
-because it sets a **published password** on those accounts. It touches only
+Creates five accounts on the fake `+54 9 11 0000 000x` range, their chats, a
+group, and 24-hour status updates. The password is **generated per run and
+printed** — set `WPP_SEED_PASSWORD` beforehand to choose it (the end-to-end
+suite needs that). The seed upserts by unique key, so it is safe to re-run;
+`ALLOW_PROD_SEED` is required because it still creates real, loggable-in
+accounts on a live database. It touches only
 `Wa*` tables — `npm run db:seed` (the Slack workspace) is unaffected, and vice
 versa.
 

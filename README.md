@@ -70,7 +70,8 @@ npm run db:seed:wpp             # demo accounts, chats, a group and statuses
 npm run dev                     # http://localhost:3000/wpp
 ```
 
-Demo accounts (password `talkaroo2026`): `+5491100000001` … `+5491100000005`.
+Demo accounts: `+5491100000001` … `+5491100000005`. The seed generates their
+password and prints it; set `WPP_SEED_PASSWORD` to choose it yourself.
 Start with the first one — the unread counts and read-receipt states are
 arranged around it. Both seeds are independent; running one leaves the other
 app's data alone.

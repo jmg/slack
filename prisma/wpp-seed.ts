@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "../src/generated/prisma/client";
 import type { WaVisibility } from "../src/generated/prisma/enums";
@@ -36,7 +37,20 @@ const minutesAgo = (m: number) => new Date(NOW - m * 60_000);
 const secondsAgo = (s: number) => new Date(NOW - s * 1_000);
 
 /** Shared password for every demo account. */
-const PASSWORD = "talkaroo2026";
+/**
+ * The password every demo account gets.
+ *
+ * Generated per run unless `WPP_SEED_PASSWORD` is set, and printed in the
+ * summary below. A password committed to the repository is a real problem, not
+ * just a scanner alert: this seed is meant to be runnable against a deployed
+ * database, and five accounts with a password anyone can read from GitHub is
+ * exactly the account takeover `ALLOW_PROD_SEED` is trying to make deliberate.
+ *
+ * Set it explicitly when something else needs to know it up front — the
+ * end-to-end suite does (see e2e/README.md).
+ */
+const PASSWORD =
+  process.env.WPP_SEED_PASSWORD ?? `demo-${randomBytes(8).toString("hex")}`;
 
 /**
  * Canonicalise a literal through the same helper sign-up uses, so the seeded
