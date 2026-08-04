@@ -95,6 +95,20 @@ export function ChatPane({ chatId }: { chatId: string }) {
     if (atBottom) scrollToBottom();
   }, [visible.length, atBottom, scrollToBottom]);
 
+  // The same rule, for the other way the newest message can leave the screen:
+  // the composer growing. Attach three images or type five lines and this
+  // scroller shrinks from the bottom, so whatever was pinned there slides out
+  // of sight — no message arrived, so the effect above never runs. Watching our
+  // own box catches every cause at once (attachments, the reply preview, the
+  // edit banner, the phone keyboard) instead of wiring each one up separately.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !atBottom) return;
+    const observer = new ResizeObserver(() => scrollToBottom());
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [atBottom, scrollToBottom]);
+
   // The pane is keyed by chat id upstream, so opening another conversation
   // remounts it: no state to reset here, only the initial jump to the newest
   // message once the first page has painted.

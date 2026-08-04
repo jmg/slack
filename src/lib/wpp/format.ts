@@ -160,8 +160,19 @@ export function waAvatarColor(seed: string): string {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
+/**
+ * Initials for the avatar, or "" to let the caller fall back to the silhouette.
+ *
+ * Only word-initial *letters* count. An unsaved contact is displayed by their
+ * number, and "+54 9110000005" would otherwise initialise to "+9" — WhatsApp
+ * shows the anonymous person glyph there, which is also the honest answer: we
+ * don't know who this is. Emoji lead the same way ("🔥 Asado" is not "🔥A").
+ */
 export function waInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
-  if (parts.length === 0) return "";
-  return parts.map((p) => [...p][0]?.toUpperCase() ?? "").join("");
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter((p) => /\p{L}/u.test([...p][0] ?? ""))
+    .slice(0, 2);
+  return parts.map((p) => [...p][0]!.toUpperCase()).join("");
 }
