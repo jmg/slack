@@ -313,7 +313,10 @@ function buildSummary(
       ? (chat.subject ?? "")
       : peer
         ? directTitle(peer, contacts, savedContactIds.has(peer.id))
-        : "";
+        // "Message yourself" has no peer to name it after, so it takes the
+        // viewer's own name — the client appends "(You)". Left empty it
+        // rendered as a nameless row reading just " (Tú)".
+        : (chat.members.find((m) => m.userId === me.id)?.user.name ?? "");
 
   // A "clear chat" cursor doesn't delete rows, so the newest message can still
   // predate it — in which case the row correctly shows no preview at all.
