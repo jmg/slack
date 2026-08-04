@@ -104,6 +104,9 @@ export function GroupInfoPanel({
       });
       await mutate(wppKeys.chat(chatId), updated, { revalidate: false });
       void mutate(wppKeys.chats);
+      // The server writes a SYSTEM message for this; without revalidating the
+      // timeline the event only ever showed up in the chat-list preview.
+      void mutate(wppKeys.messages(chatId));
       return true;
     } catch (err) {
       toast.error(wppError(err, t));
@@ -528,6 +531,7 @@ function MemberRow({
         json: { role },
       });
       void mutate(wppKeys.chat(chatId));
+      void mutate(wppKeys.messages(chatId));
     } catch (err) {
       toast.error(wppError(err, t));
     }
@@ -541,6 +545,7 @@ function MemberRow({
       });
       void mutate(wppKeys.chat(chatId));
       void mutate(wppKeys.chats);
+      void mutate(wppKeys.messages(chatId));
     } catch (err) {
       toast.error(wppError(err, t));
     }
@@ -655,6 +660,7 @@ function AddParticipantsDialog({
       });
       void mutate(wppKeys.chat(chatId));
       void mutate(wppKeys.chats);
+      void mutate(wppKeys.messages(chatId));
       onOpenChange(false);
       setSelected([]);
     } catch (err) {

@@ -5,7 +5,7 @@ import {
   chatRow,
   expect,
   interpolate,
-  SEED_ACCOUNTS,
+  messageBubble,
   SEED_TITLES,
   test,
 } from "./fixtures";
@@ -18,10 +18,11 @@ import {
  * picked up by mistake. Sofía is the creator, which makes her its admin — the
  * add/remove controls only exist for admins.
  *
- * Note the two naming systems in play: the contact picker and the participant
- * list show the name *Sofía saved someone under* ("Emma (trabajo)"), while the
- * system messages the server writes carry the account's own name ("Emma
- * Clarke"). Asserting both is what proves each side is reading the right one.
+ * One naming rule runs through all of it: everything Sofía sees names people
+ * the way *she* saved them ("Emma (trabajo)"), including the system messages —
+ * the server stores ids and the client resolves them against her address book,
+ * so a group event reads "You added Emma (trabajo)". Asserting the alias rather
+ * than the account name is what proves that resolution happened.
  */
 
 const you = en["common.you"];
@@ -69,8 +70,11 @@ test.describe("groups", () => {
     // The new group is now a row in the list, under the name it was given.
     await expect(chatRow(sofia, subject)).toBeVisible();
 
+    // Scoped to the conversation, not the page: the suite leaves its groups
+    // behind, so their chat-list rows preview the very same sentence and a bare
+    // getByText resolves to several elements.
     await expect(
-      sofia.getByText(interpolate(en["system.groupCreated"], { actor: you })),
+      messageBubble(sofia, interpolate(en["system.groupCreated"], { actor: you })),
     ).toBeVisible();
 
     // The order of the two names comes from the database, so assert on the
@@ -78,9 +82,10 @@ test.describe("groups", () => {
     // the ones *Sofía* saved them under — a system message says "You added
     // Mateo ❤️", not the account's own name, the same as everywhere else in
     // WhatsApp.
-    const added = sofia
-      .getByText(interpolate(en["system.membersAdded"], { actor: you, targets: "" }).trim())
-      .first();
+    const added = messageBubble(
+      sofia,
+      interpolate(en["system.membersAdded"], { actor: you, targets: "" }).trim(),
+    ).first();
     await expect(added).toContainText(SEED_TITLES.sofiaSeesMateo);
     await expect(added).toContainText(SEED_TITLES.sofiaSeesEmma);
   });
@@ -117,7 +122,8 @@ test.describe("groups", () => {
       panel.getByRole("listitem").filter({ hasText: SEED_TITLES.sofiaSeesOlivia }),
     ).toBeVisible();
     await expect(
-      sofia.getByText(
+      messageBubble(
+        sofia,
         interpolate(en["system.membersAdded"], {
           actor: you,
           targets: SEED_TITLES.sofiaSeesOlivia,
@@ -142,10 +148,11 @@ test.describe("groups", () => {
       panel.getByRole("listitem").filter({ hasText: SEED_TITLES.sofiaSeesEmma }),
     ).toHaveCount(0);
     await expect(
-      sofia.getByText(
+      messageBubble(
+        sofia,
         interpolate(en["system.memberRemoved"], {
           actor: you,
-          targets: SEED_ACCOUNTS.emma.name,
+          targets: SEED_TITLES.sofiaSeesEmma,
         }),
       ),
     ).toBeVisible();

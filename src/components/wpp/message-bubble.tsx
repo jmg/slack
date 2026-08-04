@@ -103,7 +103,10 @@ export function MessageBubble({
   // ── System messages are a centred chip, not a bubble ────────────────────
   if (message.kind === "SYSTEM" && message.system) {
     return (
-      <div className="flex justify-center py-1">
+      // Same `wa-msg-<id>` hook as every other row: a system event is a message
+      // in the log, so replies-to-permalink, scroll-into-view and anything else
+      // that addresses a message by id should be able to reach it too.
+      <div id={`wa-msg-${message.id}`} className="flex justify-center py-1">
         <span className="max-w-[80%] rounded-md bg-[var(--wa-system)] px-3 py-1.5 text-center text-xs text-[var(--wa-system-ink)] shadow-sm">
           {systemMessageText(message.system, me.id, t)}
         </span>
