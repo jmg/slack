@@ -87,6 +87,36 @@ export const SYSTEM_MESSAGE_KEYS: Record<WaSystemAction, WppKey> = {
   "message.unpinned": "system.messageUnpinned",
 };
 
+/** Same events, worded for the viewer who performed them. */
+export const SYSTEM_MESSAGE_SELF_KEYS: Record<WaSystemAction, WppKey> = {
+  "group.created": "system.groupCreated.self",
+  "group.subject": "system.subjectChanged.self",
+  "group.description": "system.descriptionChanged.self",
+  "group.icon": "system.iconChanged.self",
+  "group.settings": "system.settingsChanged.self",
+  "member.added": "system.membersAdded.self",
+  "member.removed": "system.memberRemoved.self",
+  "member.left": "system.memberLeft.self",
+  "member.joinedViaLink": "system.memberJoinedViaLink.self",
+  "admin.granted": "system.adminGranted.self",
+  "admin.revoked": "system.adminRevoked.self",
+  "chat.disappearingOn": "system.disappearingOn.self",
+  "chat.disappearingOff": "system.disappearingOff.self",
+  "message.pinned": "system.messagePinned.self",
+  "message.unpinned": "system.messageUnpinned.self",
+};
+
+/**
+ * Worded for the viewer who was on the receiving end. Only the four actions
+ * that name someone can have one — nobody is the target of "changed the icon".
+ */
+export const SYSTEM_MESSAGE_YOU_KEYS: Partial<Record<WaSystemAction, WppKey>> = {
+  "member.added": "system.membersAdded.you",
+  "member.removed": "system.memberRemoved.you",
+  "admin.granted": "system.adminGranted.you",
+  "admin.revoked": "system.adminRevoked.you",
+};
+
 export type WaPollOptionResult = {
   id: string;
   text: string;

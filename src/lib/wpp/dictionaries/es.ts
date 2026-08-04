@@ -454,6 +454,36 @@ export const es: WppDict = {
   "system.messagePinned": "{actor} fijó un mensaje",
   "system.messageUnpinned": "{actor} dejó de fijar un mensaje",
 
+  /*
+   * Second-person variants of the group events above.
+   *
+   * `.self` runs when the viewer is the actor and `.you` when the viewer is the
+   * only target. They are separate strings rather than a name substitution
+   * because a pronoun is not a drop-in for a name: Spanish has to agree the
+   * verb ("Tu designó" is not a sentence) and move the object to a clitic
+   * ("te designó", never "designó a ti").
+   */
+  "system.groupCreated.self": "Creaste este grupo",
+  "system.subjectChanged.self": "Cambiaste el nombre del grupo a «{value}»",
+  "system.descriptionChanged.self": "Cambiaste la descripción del grupo",
+  "system.iconChanged.self": "Cambiaste el ícono de este grupo",
+  "system.settingsChanged.self": "Cambiaste los ajustes de este grupo",
+  "system.membersAdded.self": "Añadiste a {targets}",
+  "system.memberRemoved.self": "Quitaste a {targets}",
+  "system.memberLeft.self": "Saliste",
+  "system.memberJoinedViaLink.self": "Te uniste usando el enlace de invitación",
+  "system.adminGranted.self": "Designaste a {targets} como admin",
+  "system.adminRevoked.self": "Quitaste a {targets} como admin",
+  "system.disappearingOn.self":
+    "Activaste los mensajes temporales. Los mensajes nuevos desaparecerán después de {duration}.",
+  "system.disappearingOff.self": "Desactivaste los mensajes temporales",
+  "system.messagePinned.self": "Fijaste un mensaje",
+  "system.messageUnpinned.self": "Dejaste de fijar un mensaje",
+  "system.membersAdded.you": "{actor} te añadió",
+  "system.memberRemoved.you": "{actor} te quitó",
+  "system.adminGranted.you": "{actor} te designó como admin",
+  "system.adminRevoked.you": "{actor} te quitó como admin",
+
   "poll.create": "Encuesta",
   "poll.newTitle": "Crear encuesta",
   "poll.question": "Pregunta",

@@ -6,6 +6,8 @@ import {
 import type { Translate, WppKey } from "@/lib/wpp/i18n";
 import {
   SYSTEM_MESSAGE_KEYS,
+  SYSTEM_MESSAGE_SELF_KEYS,
+  SYSTEM_MESSAGE_YOU_KEYS,
   type WaChatPreview,
   type WaMessage,
   type WaMessageKindName,
@@ -57,8 +59,8 @@ export function joinNames(names: string[], t: Translate): string {
  * Render a group event in the viewer's language.
  *
  * The row stores an action plus ids, never a sentence, which is what lets the
- * same event read as "Ada added Grace" for one participant and "Añadiste a
- * Grace" for Ada herself — the viewer sees "You" wherever they appear.
+ * same event read as "Ada added Grace" for one participant, "Añadiste a Grace"
+ * for Ada herself, and "Ada te añadió" for Grace.
  */
 export function systemMessageText(
   system: WaSystemPayload,
@@ -68,7 +70,22 @@ export function systemMessageText(
   const nameFor = (id: string | null, fallback: string) =>
     id && id === meId ? t("common.you") : fallback;
 
-  return t(SYSTEM_MESSAGE_KEYS[system.action] ?? "system.settingsChanged", {
+  /*
+   * Pick the wording before filling anything in, because a pronoun cannot be
+   * substituted for a name and still leave a sentence behind. "{actor} designó
+   * a {targets}" with the viewer in either slot produced "Tú designó a Tú":
+   * Spanish agrees the verb with the subject and turns the object into a
+   * clitic. English needs the same split for "You added" vs "added you", it is
+   * just less obviously wrong when you skip it.
+   */
+  const key =
+    system.actorId === meId
+      ? SYSTEM_MESSAGE_SELF_KEYS[system.action]
+      : system.targetIds.length === 1 && system.targetIds[0] === meId
+        ? SYSTEM_MESSAGE_YOU_KEYS[system.action]
+        : SYSTEM_MESSAGE_KEYS[system.action];
+
+  return t(key ?? SYSTEM_MESSAGE_KEYS[system.action] ?? "system.settingsChanged", {
     actor: nameFor(system.actorId, system.actor),
     targets: joinNames(
       system.targets.map((name, i) => nameFor(system.targetIds[i] ?? null, name)),

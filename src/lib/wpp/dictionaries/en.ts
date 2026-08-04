@@ -455,6 +455,36 @@ export const en = {
   "system.messagePinned": "{actor} pinned a message",
   "system.messageUnpinned": "{actor} unpinned a message",
 
+  /*
+   * Second-person variants of the group events above.
+   *
+   * `.self` runs when the viewer is the actor and `.you` when the viewer is the
+   * only target. They are separate strings rather than a name substitution
+   * because a pronoun is not a drop-in for a name: Spanish has to agree the
+   * verb ("Tu designó" is not a sentence) and move the object to a clitic
+   * ("te designó", never "designó a ti").
+   */
+  "system.groupCreated.self": "You created this group",
+  "system.subjectChanged.self": "You changed the group name to “{value}”",
+  "system.descriptionChanged.self": "You changed the group description",
+  "system.iconChanged.self": "You changed this group's icon",
+  "system.settingsChanged.self": "You changed this group's settings",
+  "system.membersAdded.self": "You added {targets}",
+  "system.memberRemoved.self": "You removed {targets}",
+  "system.memberLeft.self": "You left",
+  "system.memberJoinedViaLink.self": "You joined using this group's invite link",
+  "system.adminGranted.self": "You made {targets} an admin",
+  "system.adminRevoked.self": "You dismissed {targets} as admin",
+  "system.disappearingOn.self":
+    "You turned on disappearing messages. New messages will disappear after {duration}.",
+  "system.disappearingOff.self": "You turned off disappearing messages",
+  "system.messagePinned.self": "You pinned a message",
+  "system.messageUnpinned.self": "You unpinned a message",
+  "system.membersAdded.you": "{actor} added you",
+  "system.memberRemoved.you": "{actor} removed you",
+  "system.adminGranted.you": "{actor} made you an admin",
+  "system.adminRevoked.you": "{actor} dismissed you as admin",
+
   "poll.create": "Poll",
   "poll.newTitle": "Create poll",
   "poll.question": "Question",
