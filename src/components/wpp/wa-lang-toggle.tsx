@@ -1,10 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
 import { useSWRConfig } from "swr";
 import { cn } from "@/lib/utils";
-import { useT, useWppLocale } from "@/components/wpp/i18n-provider";
+import {
+  useSetWppLocale,
+  useT,
+  useWppLocale,
+} from "@/components/wpp/i18n-provider";
 import { WPP_LOCALES, type WppLocale } from "@/lib/wpp/i18n";
 import { setWppLocaleCookie, wppFetch, wppKeys } from "@/lib/wpp/client";
 
@@ -31,20 +33,26 @@ export function WppLangToggle({
 }) {
   const t = useT();
   const locale = useWppLocale();
-  const router = useRouter();
+  const setLocale = useSetWppLocale();
   const { mutate } = useSWRConfig();
-  const [pending, startTransition] = useTransition();
 
-  async function choose(next: WppLocale) {
+  function choose(next: WppLocale) {
     if (next === locale) return;
+
+    // Repaint first. Both dictionaries are already in the bundle, so this is a
+    // pure re-render — waiting on the PATCH and a router.refresh() before a
+    // single string changed is what made this feel stuck.
+    setLocale(next);
     setWppLocaleCookie(next);
+
+    // The account setting outlives this browser; it just doesn't have to block
+    // the switch. A failure leaves the cookie, so the choice survives a reload
+    // on this device either way.
     if (persist) {
-      await wppFetch(wppKeys.me, { method: "PATCH", json: { locale: next } }).catch(
-        () => {},
-      );
-      void mutate(wppKeys.me);
+      void wppFetch(wppKeys.me, { method: "PATCH", json: { locale: next } })
+        .then(() => mutate(wppKeys.me))
+        .catch(() => {});
     }
-    startTransition(() => router.refresh());
   }
 
   return (
@@ -52,7 +60,6 @@ export function WppLangToggle({
       className={cn(
         "inline-flex items-center gap-0.5 rounded-full p-0.5",
         variant === "onDark" ? "bg-white/15" : "bg-[var(--wa-app)]",
-        pending && "opacity-60",
         className,
       )}
       role="group"
@@ -64,7 +71,7 @@ export function WppLangToggle({
           <button
             key={code}
             type="button"
-            onClick={() => void choose(code)}
+            onClick={() => choose(code)}
             aria-pressed={active}
             className={cn(
               "rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors",

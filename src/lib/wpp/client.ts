@@ -51,6 +51,10 @@ export function wppError(err: unknown, t: Translate): string {
  */
 export function setWppLocaleCookie(locale: string): void {
   document.cookie = `${WPP_LOCALE_COOKIE}=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+  // `<html lang>` is server-rendered, so a client-side switch has to correct it
+  // here or screen readers and hyphenation keep using the old language until
+  // the next full load.
+  document.documentElement.lang = locale;
 }
 
 /** JSON request against the WhatsApp API. Throws with the server's key. */

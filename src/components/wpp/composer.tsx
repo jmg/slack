@@ -331,6 +331,15 @@ export function Composer({
     // you already sent, and reopening it pre-fills the box with it.
     cancelDraft();
 
+    // Clear the box *before* the round trip, not after. The optimistic bubble
+    // already appears instantly, but leaving the text sitting in the composer
+    // until the POST returns reads as "nothing happened" — which is what made
+    // sending feel slow even though the message was already on screen. On
+    // failure everything below puts it back.
+    setText("");
+    setAttachments([]);
+    savedDraft.current = "";
+
     setSending(true);
     try {
       if (editing) {
@@ -352,15 +361,15 @@ export function Composer({
         onCancelReply();
       }
 
-      setText("");
-      setAttachments([]);
-      savedDraft.current = "";
       // Await the revalidation before telling the parent to drop the optimistic
       // bubble, so the placeholder is replaced rather than blinking out and
       // back in.
       await mutate(wppKeys.messages(chatId));
       void mutate(wppKeys.chats);
     } catch (err) {
+      // Hand the message back rather than losing it to a failed request.
+      setText(body);
+      setAttachments(all);
       toast.error(wppError(err, t));
     } finally {
       settle?.();
