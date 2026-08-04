@@ -6,11 +6,7 @@ import { apiError, handle } from "@/lib/api";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { assertSameOrigin } from "@/lib/csrf";
 import { recordAudit } from "@/lib/audit";
-
-// A constant, valid bcrypt hash. When the account doesn't exist we still run a
-// compare against this so the miss path costs ~the same as a hit — otherwise
-// response timing reveals which emails are registered.
-const DUMMY_HASH = "$2b$10$vq1BE/aRFCfsBRDVMbeUG.8DblfLLYm9uiCKi0ryjpCLUwPb.YLVO";
+import { dummyPasswordHash } from "@/lib/password";
 
 const WINDOW_MS = 15 * 60 * 1000;
 
@@ -40,9 +36,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    // Resolved together so the miss path never pays for the dummy hash on top
+    // of its compare — see dummyPasswordHash().
+    const [user, dummyHash] = await Promise.all([
+      prisma.user.findUnique({ where: { email } }),
+      dummyPasswordHash(),
+    ]);
     // Always run exactly one compare (real hash or dummy) so timing is uniform.
-    const ok = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
+    const ok = await verifyPassword(password, user?.passwordHash ?? dummyHash);
     if (!user || !ok) {
       return apiError("Invalid email or password", 401);
     }

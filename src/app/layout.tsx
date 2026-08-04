@@ -77,6 +77,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      // The WhatsApp half of this repo (/wpp) renders in English or Spanish and
+      // corrects `lang` before paint (see src/app/wpp/layout.tsx). Without this
+      // React would flag the attribute it finds as a hydration mismatch.
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">

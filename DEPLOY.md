@@ -1,6 +1,6 @@
-# Deploying to shipdeck
+# Deploying to deploycloud
 
-This app is ready to deploy on a [shipdeck](../../../DESARROLLO/idea) platform
+This app is ready to deploy on a [deploycloud](../deploycloud) platform
 (git URL in, HTTPS app out). It ships a `Dockerfile` and a `Procfile`:
 
 - **web** → `next start` on `$PORT`
@@ -9,7 +9,7 @@ This app is ready to deploy on a [shipdeck](../../../DESARROLLO/idea) platform
 
 ## Prerequisites
 
-- A running shipdeck platform and an API token (dashboard → **Tokens**).
+- A running deploycloud platform and an API token (dashboard → **Tokens**).
 - This repo pushed to a git URL the platform can clone (e.g. GitHub).
 - DNS for the custom domain pointing at the platform server.
 
@@ -17,8 +17,8 @@ This app is ready to deploy on a [shipdeck](../../../DESARROLLO/idea) platform
 
 ```sh
 # From the platform repo checkout, put the CLI on PATH:
-node /home/jm/DESARROLLO/idea/bin/shipdeck.mjs --help
-shipdeck login https://<your-platform-domain>
+node /home/jm/DESARROLLO/deploycloud/bin/deploycloud.mjs --help
+deploycloud login https://<your-platform-domain>
 ```
 
 In the **dashboard**, create the app (the CLI has no `apps create` command):
@@ -27,7 +27,7 @@ In the **dashboard**, create the app (the CLI has no `apps create` command):
 2. **Addons** → add **Postgres** (injects `DATABASE_URL` automatically).
 3. **Env** → set the app secret (generate a fresh one):
    ```sh
-   shipdeck env slack AUTH_SECRET=$(openssl rand -hex 32)
+   deploycloud env slack AUTH_SECRET=$(openssl rand -hex 32)
    ```
    `DATABASE_URL` comes from the Postgres addon — do **not** set it by hand.
    `SHADOW_DATABASE_URL` is **not** needed in production (only `migrate dev` uses it).
@@ -39,7 +39,7 @@ In the **dashboard**, create the app (the CLI has no `apps create` command):
 ## Deploy
 
 ```sh
-shipdeck deploy slack --watch
+deploycloud deploy slack --watch
 ```
 
 The `release` step runs `prisma migrate deploy` against the addon database, the
@@ -49,7 +49,7 @@ downtime.
 ## (Optional) load demo data
 
 ```sh
-shipdeck run slack npm run db:seed
+deploycloud run slack npm run db:seed
 ```
 
 Creates the **Acme Inc** workspace with demo channels, messages and four demo
