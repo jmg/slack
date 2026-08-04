@@ -170,7 +170,14 @@ export function ChatPane({ chatId }: { chatId: string }) {
     if (selected.length === 0) return;
     if (
       action === "delete" &&
-      !window.confirm(t("select.deleteConfirm", { count: selected.length }))
+      // Select mode is *entered* by selecting one message, so the singular is
+      // the common case, not the edge case: "Delete 1 messages for you?" was
+      // the first thing this feature ever said.
+      !window.confirm(
+        selected.length === 1
+          ? t("select.deleteConfirmOne")
+          : t("select.deleteConfirm", { count: selected.length }),
+      )
     ) {
       return;
     }
@@ -329,7 +336,9 @@ export function ChatPane({ chatId }: { chatId: string }) {
         : null;
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1">
+    // `relative` so the info panel can cover this pane on a narrow window
+    // instead of squeezing the conversation into a sliver beside it.
+    <div className="relative flex min-h-0 min-w-0 flex-1">
       <div className="wa-wallpaper flex min-h-0 min-w-0 flex-1 flex-col">
         {selected.length > 0 ? (
           <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--wa-border)] bg-[var(--wa-header)] px-3">
@@ -342,7 +351,9 @@ export function ChatPane({ chatId }: { chatId: string }) {
               <X className="size-5" />
             </button>
             <span className="flex-1 text-sm font-medium text-[var(--wa-text)]">
-              {t("select.title", { count: selected.length })}
+              {selected.length === 1
+                ? t("select.titleOne")
+                : t("select.title", { count: selected.length })}
             </span>
             <button
               type="button"

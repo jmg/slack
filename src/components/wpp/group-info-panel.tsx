@@ -221,7 +221,20 @@ export function GroupInfoPanel({
   return (
     <aside
       aria-label={t(isGroup ? "group.info" : "chatMenu.contactInfo")}
-      className="flex h-full w-full shrink-0 flex-col border-l border-[var(--wa-border)] bg-[var(--wa-panel)] md:w-[26rem]"
+      /*
+       * Covers the conversation until there is genuinely room for three
+       * columns, and only then becomes a 26rem column beside it.
+       *
+       * This used to be a plain flex sibling splitting at `md` (768px). At
+       * 834px that left the conversation 46 pixels wide: bubbles wrapped to one
+       * character per line and the composer spilled over the panel. Rail + chat
+       * list already take ~390px, so 26rem of panel does not fit next to a
+       * usable conversation until ~1280px. Below that it is positioned over the
+       * pane (which is `relative`) rather than sharing the row with it — a
+       * sibling still claims width even at `w-full`, which is how the sliver
+       * survived a first attempt at this.
+       */
+      className="absolute inset-0 z-30 flex h-full w-full flex-col border-l border-[var(--wa-border)] bg-[var(--wa-panel)] xl:static xl:w-[26rem] xl:shrink-0"
     >
       <header className="flex h-14 shrink-0 items-center gap-4 px-4">
         <button

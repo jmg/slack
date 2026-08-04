@@ -21,7 +21,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { WaEmojiPicker } from "@/components/wpp/wa-emoji-picker";
-import { MentionAutocomplete } from "@/components/wpp/mention-autocomplete";
+import {
+  MentionAutocomplete,
+  useMentionMatches,
+} from "@/components/wpp/mention-autocomplete";
 import { NewPollDialog } from "@/components/wpp/new-poll-dialog";
 import { useT } from "@/components/wpp/i18n-provider";
 import { wppError, wppFetch, wppKeys } from "@/lib/wpp/client";
@@ -213,6 +216,17 @@ export function Composer({
     }
   }
 
+  const mentionMatches = useMentionMatches(chatId, mentionQuery);
+  /**
+   * The highlighted row, clamped. The list shrinks as you keep typing, so an
+   * index the arrows walked to a moment ago can point past the end — and an
+   * Enter against that index would read `undefined.token`.
+   */
+  const activeMentionIndex = Math.min(
+    mentionIndex,
+    Math.max(0, mentionMatches.length - 1),
+  );
+
   /** Replace the partial token under the caret with the chosen one. */
   function insertMention(token: string) {
     const textarea = textareaRef.current;
@@ -379,12 +393,18 @@ export function Composer({
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    // While the mention picker is open it owns Enter and the arrows — otherwise
-    // choosing a name would send the half-typed message instead.
-    if (mentionQuery !== null) {
+    // The picker owns Enter and the arrows *only when it is offering someone* —
+    // otherwise choosing a name would send the half-typed message instead.
+    //
+    // The condition used to be "the caret is in an @token", which is not the
+    // same thing: a 1:1 chat never offers mentions, so typing "ping @ada" there
+    // left Enter swallowed by a picker that wasn't on screen and the message
+    // could not be sent at all. Enter also has to *make* the selection —
+    // nothing else was doing it, so the picker was mouse-only.
+    if (mentionMatches.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setMentionIndex((i) => i + 1);
+        setMentionIndex((i) => Math.min(mentionMatches.length - 1, i + 1));
         return;
       }
       if (e.key === "ArrowUp") {
@@ -398,9 +418,8 @@ export function Composer({
         return;
       }
       if (e.key === "Enter" && !e.shiftKey) {
-        // The picker turns this into a selection via its own handler; swallow
-        // the key so the message isn't sent underneath it.
         e.preventDefault();
+        insertMention(mentionMatches[activeMentionIndex].token);
         return;
       }
     }
@@ -457,9 +476,15 @@ export function Composer({
       )}
 
       {/* Capped and scrollable: ten queued files used to grow the composer until
-          the conversation above it had nowhere left to go. */}
+          the conversation above it had nowhere left to go.
+
+          7.5rem is two rows exactly: pt-2 (8) + chip (52) + gap-2 (8) + chip
+          (52) = 120px. The old max-h-28 was 112 and sliced the second row 8px
+          from its bottom — with only three files queued that reads as a
+          rendering glitch, not as "scroll for more". Past two rows it does
+          scroll, and a row cut at the boundary then means what it looks like. */}
       {attachments.length > 0 && (
-        <ul className="wa-scroll flex max-h-28 flex-wrap gap-2 overflow-y-auto px-4 pt-2">
+        <ul className="wa-scroll flex max-h-[7.5rem] flex-wrap gap-2 overflow-y-auto px-4 pt-2">
           {attachments.map((attachment) => (
             <li
               key={attachment.id}
@@ -495,9 +520,8 @@ export function Composer({
 
       <div className="relative flex items-end gap-1 px-3 py-2">
         <MentionAutocomplete
-          chatId={chatId}
-          query={mentionQuery}
-          activeIndex={mentionIndex}
+          matches={mentionMatches}
+          activeIndex={activeMentionIndex}
           onPick={insertMention}
         />
         {recorder.recording ? (

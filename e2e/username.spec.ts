@@ -1,6 +1,7 @@
 import type { Page, TestInfo } from "@playwright/test";
 import { en } from "@/lib/wpp/dictionaries/en";
 import { WPP_API, wpp } from "@/lib/wpp/config";
+import { formatPhone } from "@/lib/wpp/phone";
 import { USERNAME_MIN } from "@/lib/wpp/username";
 import {
   CHAT_URL,
@@ -187,9 +188,13 @@ test.describe("usernames", () => {
 
     await seeker.waitForURL(CHAT_URL);
     await expect(composer(seeker)).toBeVisible();
-    // Olivia has never saved Emma, so the row is titled with Emma's own name
-    // rather than an alias — which is what proves the handle resolved to the
-    // right account.
-    await expect(chatRow(seeker, SEED_ACCOUNTS.emma.name)).toBeVisible();
+    // Olivia has never saved Emma, so the row is titled with Emma's *number*,
+    // not her name — `directTitle` in src/lib/wpp/chats.ts falls back to the
+    // formatted phone for anyone who isn't in your address book, the same as
+    // WhatsApp. That the number is Emma's is what proves the handle resolved
+    // to the right account.
+    await expect(
+      chatRow(seeker, formatPhone(SEED_ACCOUNTS.emma.phone.replace(/\s/g, ""))),
+    ).toBeVisible();
   });
 });

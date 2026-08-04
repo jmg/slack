@@ -494,9 +494,11 @@ function ViewerList({ item }: { item: WaStatusItem }) {
     <div className="max-h-48 shrink-0 overflow-y-auto border-t border-white/10 bg-black/40 px-4 py-3 wa-scroll">
       <p className="flex items-center gap-2 text-xs font-medium text-white/70">
         <Eye className="size-3.5" aria-hidden />
-        {item.viewers.length > 0
-          ? t("status.viewers", { count: item.viewers.length })
-          : t("status.noViewers")}
+        {item.viewers.length === 0
+          ? t("status.noViewers")
+          : item.viewers.length === 1
+            ? t("status.viewersOne")
+            : t("status.viewers", { count: item.viewers.length })}
       </p>
       {item.viewers.length > 0 && (
         <ul className="mt-2 flex flex-col gap-2">

@@ -74,12 +74,15 @@ test.describe("groups", () => {
     ).toBeVisible();
 
     // The order of the two names comes from the database, so assert on the
-    // sentence and each name rather than on one rendered string.
+    // sentence and each name rather than on one rendered string. The names are
+    // the ones *Sofía* saved them under — a system message says "You added
+    // Mateo ❤️", not the account's own name, the same as everywhere else in
+    // WhatsApp.
     const added = sofia
       .getByText(interpolate(en["system.membersAdded"], { actor: you, targets: "" }).trim())
       .first();
-    await expect(added).toContainText(SEED_ACCOUNTS.mateo.name);
-    await expect(added).toContainText(SEED_ACCOUNTS.emma.name);
+    await expect(added).toContainText(SEED_TITLES.sofiaSeesMateo);
+    await expect(added).toContainText(SEED_TITLES.sofiaSeesEmma);
   });
 
   test("adds and removes a participant from group info", async ({ sofia }) => {
@@ -117,7 +120,7 @@ test.describe("groups", () => {
       sofia.getByText(
         interpolate(en["system.membersAdded"], {
           actor: you,
-          targets: SEED_ACCOUNTS.olivia.name,
+          targets: SEED_TITLES.sofiaSeesOlivia,
         }),
       ),
     ).toBeVisible();

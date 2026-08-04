@@ -8,35 +8,35 @@ import { wppKeys } from "@/lib/wpp/client";
 import { waMentionToken, WA_MENTION_EVERYONE } from "@/lib/wpp/mentions";
 import type { WaChatDetail } from "@/lib/wpp/types";
 
+export type MentionMatch = {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  token: string;
+};
+
 /**
- * The `@` picker above the composer.
+ * Who the `@token` under the caret could mean.
  *
- * Group chats only — mentioning the one other person in a 1:1 is noise, and
+ * The composer calls this too, and that is the point: it has to know whether
+ * the picker is offering anything *before* it decides whether to let the
+ * picker have Enter. When only this component knew, the composer swallowed
+ * Enter on every half-typed "@word" — including in 1:1 chats, which never
+ * offer mentions at all — and the message simply could not be sent.
+ *
+ * Group chats only: mentioning the one other person in a 1:1 is noise, and
  * WhatsApp doesn't offer it there either.
- *
- * Rendered only while the caret sits inside an `@token`; the composer owns that
- * detection because it owns the textarea and its selection. This component is
- * just the list.
  */
-export function MentionAutocomplete({
-  chatId,
-  query,
-  activeIndex,
-  onPick,
-}: {
-  chatId: string;
-  /** The partial token after `@`, lowercased. `null` hides the picker. */
-  query: string | null;
-  /** Index highlighted by the arrow keys, owned by the composer. */
-  activeIndex: number;
-  onPick: (token: string) => void;
-}) {
+export function useMentionMatches(
+  chatId: string,
+  query: string | null,
+): MentionMatch[] {
   const t = useT();
   const { data: chat } = useSWR<WaChatDetail>(
     query !== null ? wppKeys.chat(chatId) : null,
   );
 
-  const matches = useMemo(() => {
+  return useMemo(() => {
     if (query === null || !chat || chat.type !== "GROUP") return [];
 
     const people = chat.members
@@ -58,8 +58,28 @@ export function MentionAutocomplete({
 
     return [...withEveryone, ...people].slice(0, 8);
   }, [chat, query, t]);
+}
 
-  if (query === null || matches.length === 0) return null;
+/**
+ * The `@` picker above the composer — the list, and nothing else.
+ *
+ * Rendered only while the caret sits inside an `@token`. The composer owns the
+ * detection, the matches and the keyboard, because it owns the textarea and its
+ * selection; this component draws what it is handed.
+ */
+export function MentionAutocomplete({
+  matches,
+  activeIndex,
+  onPick,
+}: {
+  matches: MentionMatch[];
+  /** Index highlighted by the arrow keys, owned by the composer. */
+  activeIndex: number;
+  onPick: (token: string) => void;
+}) {
+  const t = useT();
+
+  if (matches.length === 0) return null;
 
   return (
     <ul

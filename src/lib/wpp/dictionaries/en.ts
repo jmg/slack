@@ -296,6 +296,7 @@ export const en = {
   "status.post": "Post",
   "status.posted": "Status posted",
   "status.viewers": "{count} views",
+  "status.viewersOne": "1 view",
   "status.noViewers": "No views yet",
   "status.deleteStatus": "Delete status",
   "status.expiresIn": "Expires in {time}",
@@ -522,9 +523,11 @@ export const en = {
   "chat.mentionsYou": "You were mentioned",
 
   "select.title": "{count} selected",
+  "select.titleOne": "1 selected",
   "select.start": "Select messages",
   "select.clear": "Clear selection",
   "select.deleteConfirm": "Delete {count} messages for you?",
+  "select.deleteConfirmOne": "Delete this message for you?",
 
   // ── Public @usernames (Telegram-style) ───────────────────────────────────
   "username.label": "Username",

@@ -294,6 +294,7 @@ export const es: WppDict = {
   "status.post": "Publicar",
   "status.posted": "Estado publicado",
   "status.viewers": "{count} vistas",
+  "status.viewersOne": "1 vista",
   "status.noViewers": "Todavía no lo vio nadie",
   "status.deleteStatus": "Eliminar estado",
   "status.expiresIn": "Vence en {time}",
@@ -521,9 +522,11 @@ export const es: WppDict = {
   "chat.mentionsYou": "Te mencionaron",
 
   "select.title": "{count} seleccionados",
+  "select.titleOne": "1 seleccionado",
   "select.start": "Seleccionar mensajes",
   "select.clear": "Quitar selección",
   "select.deleteConfirm": "¿Eliminar {count} mensajes para ti?",
+  "select.deleteConfirmOne": "¿Eliminar este mensaje para ti?",
 
   // ── @usuarios públicos (estilo Telegram) ─────────────────────────────────
   "username.label": "Nombre de usuario",

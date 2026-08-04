@@ -218,8 +218,10 @@ export function MessageBubble({
       <div
         className={cn(
           "relative max-w-[85%] min-w-24 rounded-lg px-2 pt-1.5 pb-1 text-sm shadow-[var(--wa-bubble-shadow)] sm:max-w-[70%]",
+          // `wa-out` is not decoration: globals.css redefines the dim colour
+          // tokens inside it, because they are unreadable on the green.
           mine
-            ? "bg-[var(--wa-bubble-out)] text-[var(--wa-text)]"
+            ? "wa-out bg-[var(--wa-bubble-out)] text-[var(--wa-text)]"
             : "bg-[var(--wa-bubble-in)] text-[var(--wa-text)]",
           showTail && (mine ? "wa-bubble-tail-out rounded-tr-none" : "wa-bubble-tail-in rounded-tl-none"),
         )}

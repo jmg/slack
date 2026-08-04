@@ -372,6 +372,28 @@
 .wpp-root.dark[data-wallpaper="slate"] { --wa-chat: #0e1519; }
 .wpp-root.dark[data-wallpaper="rose"] { --wa-chat: #1c1113; }
 
+/*
+ * Inside your own bubble, the dim tokens are wrong.
+ *
+ * The timestamp, the "edited" marker, the ticks and the voice-note metadata all
+ * use --wa-text-dim / --wa-tick / --wa-chip-ink, which are tuned for a panel.
+ * On the outgoing bubble they land on green: #8696a0 over the dark #005c4b is
+ * 2.6:1, and at that contrast the grey delivered tick stops being tellable from
+ * the blue read tick — the one glyph in a messenger people actually look for.
+ * (Light was no better: 2.75:1.) Redefining the tokens for this subtree fixes
+ * every one of those at once, rather than adding a `mine` branch to each.
+ */
+.wpp-root .wa-out {
+  --wa-text-dim: #42705a; /* 5.1:1 on --wa-bubble-out #d9fdd3 */
+  --wa-tick: #42705a;
+  --wa-chip-ink: #42705a;
+}
+.wpp-root.dark .wa-out {
+  --wa-text-dim: #b0cabf; /* 4.6:1 on --wa-bubble-out #005c4b */
+  --wa-tick: #b0cabf;
+  --wa-chip-ink: #b0cabf;
+}
+
 /* The conversation background: flat colour + the doodle tile on top of it. */
 .wa-wallpaper {
   position: relative;
