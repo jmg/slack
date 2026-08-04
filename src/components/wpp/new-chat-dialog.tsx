@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
-import { Search, UserPlus, Users } from "lucide-react";
+import { AtSign, Search, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -18,17 +18,24 @@ import { NewGroupDialog } from "@/components/wpp/new-group-dialog";
 import { AddContactDialog } from "@/components/wpp/add-contact-dialog";
 import { useMe, useT } from "@/components/wpp/i18n-provider";
 import { wppError, wppFetch, wppKeys } from "@/lib/wpp/client";
+import { WPP_API } from "@/lib/wpp/config";
 import { formatPhone } from "@/lib/wpp/phone";
+import {
+  isValidUsername,
+  looksLikeUsername,
+  normalizeUsername,
+} from "@/lib/wpp/username";
 import type { WaContactItem } from "@/lib/wpp/types";
 
 /**
- * "New chat": your saved contacts, plus the way to add someone you haven't
- * saved yet.
+ * "New chat": your saved contacts, plus the two ways to reach someone you
+ * haven't saved yet.
  *
- * Adding by phone number is the *only* way to reach a new person — there is no
- * directory to browse and no way to enumerate accounts, which is exactly the
- * property WhatsApp has and the reason the API answers "not found" identically
- * for a wrong number and a number with no account.
+ * A phone number and a public `@handle` are the *only* ways in — there is still
+ * no directory to browse and no way to enumerate accounts. A handle changes
+ * nothing about that: it is only findable by someone who was told it, and the
+ * API answers "not found" identically for a handle that is free and one whose
+ * owner simply isn't reachable.
  */
 export function NewChatDialog({
   open,
@@ -52,19 +59,40 @@ export function NewChatDialog({
   );
   const contacts = useMemo(() => data?.contacts ?? [], [data]);
 
+  /** The typed text read as a handle: lowercase, no leading "@". */
+  const typedHandle = normalizeUsername(query);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return contacts;
+    // Handles match too, and against the normalized form — otherwise typing the
+    // "@" that people write a handle with would hide the saved contact who owns
+    // it and offer to look them up remotely instead.
+    const handle = normalizeUsername(q);
     return contacts.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
-        (c.phone ?? "").toLowerCase().includes(q),
+        (c.phone ?? "").toLowerCase().includes(q) ||
+        (handle !== "" && (c.username ?? "").includes(handle)),
     );
   }, [contacts, query]);
 
   /** The query looks like a phone number nobody in the list matches. */
   const canAddTyped =
     /^[+0-9][\d\s().-]{6,}$/.test(query.trim()) && filtered.length === 0;
+
+  /**
+   * The query looks like an `@handle` nobody in the list matches.
+   *
+   * `looksLikeUsername` decides it is a handle rather than a number, and the
+   * shared rules then decide it is one that could exist at all — offering to
+   * message `@ab` when no account may ever be called that is a round-trip spent
+   * to say "not found".
+   */
+  const canMessageHandle =
+    filtered.length === 0 &&
+    looksLikeUsername(query) &&
+    isValidUsername(typedHandle);
 
   async function addByPhone() {
     setAdding(true);
@@ -79,6 +107,37 @@ export function NewChatDialog({
       await onPick(contact.id);
     } catch (err) {
       toast.error(wppError(err, t));
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function messageByUsername() {
+    setAdding(true);
+    try {
+      // This already opens (or creates) the 1:1 chat, but the answer is handed
+      // to `onPick` as a user id anyway: closing the dialog and navigating are
+      // the parent's job, and `POST /chats` is idempotent for a pair, so the
+      // second call costs a round-trip and buys one code path for every way of
+      // starting a chat.
+      const opened = await wppFetch<{ id: string; userId: string }>(
+        `${WPP_API}/users/${encodeURIComponent(typedHandle)}`,
+        { method: "POST" },
+      );
+      void mutate(wppKeys.chats);
+      setQuery("");
+      await onPick(opened.userId);
+    } catch (err) {
+      // "Nobody uses that handle" is the expected failure and gets the sentence
+      // written for it; anything else keeps the server's own key.
+      toast.error(
+        err instanceof Error && err.message === "error.userNotFound"
+          ? t("newChat.usernameNotFound", {
+              app: t("app.name"),
+              username: typedHandle,
+            })
+          : wppError(err, t),
+      );
     } finally {
       setAdding(false);
     }
@@ -99,7 +158,7 @@ export function NewChatDialog({
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("newChat.searchPlaceholder")}
+              placeholder={t("newChat.searchHint")}
               className="h-10 pl-9"
             />
           </div>
@@ -170,6 +229,22 @@ export function NewChatDialog({
                   <span className="text-xs text-[var(--wa-text-dim)]">
                     {query.trim()}
                   </span>
+                </span>
+              </button>
+            )}
+
+            {canMessageHandle && (
+              <button
+                type="button"
+                disabled={adding}
+                onClick={() => void messageByUsername()}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-[var(--wa-hover)] disabled:opacity-60"
+              >
+                <span className="flex size-10 items-center justify-center rounded-full bg-[var(--wa-app)] text-[var(--wa-green)]">
+                  <AtSign className="size-5" />
+                </span>
+                <span className="min-w-0 text-sm font-medium text-[var(--wa-text)]">
+                  {t("newChat.byUsername", { username: typedHandle })}
                 </span>
               </button>
             )}

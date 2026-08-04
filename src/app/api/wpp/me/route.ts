@@ -77,7 +77,20 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-    const updated = await prisma.waUser.update({ where: { id: me.id }, data });
+    // The availability check in Settings is advisory — two people can pass it
+    // for the same handle at the same instant. The unique index is the real
+    // arbiter, so its violation has to come back as a sentence rather than a
+    // 500. P2002 is Prisma's unique-constraint code.
+    let updated;
+    try {
+      updated = await prisma.waUser.update({ where: { id: me.id }, data });
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (code === "P2002" && data.username !== undefined) {
+        throw new ApiError("username.errTaken", 409);
+      }
+      throw err;
+    }
 
     if (staleAttachmentId && staleAttachmentId !== profile.data.avatarAttachmentId) {
       await deleteWaAttachment(staleAttachmentId);

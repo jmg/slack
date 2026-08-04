@@ -26,7 +26,14 @@ const WPP_AUTH_PAGES = [WPP_LOGIN, `${WPP_BASE_PATH}/register`];
  * Reachable signed-out. The invite landing page has to be, or a group link sent
  * to someone without an account would dead-end at a redirect.
  */
-const WPP_PUBLIC_PREFIXES = [...WPP_AUTH_PAGES, `${WPP_BASE_PATH}/invite`];
+const WPP_PUBLIC_PREFIXES = [
+  ...WPP_AUTH_PAGES,
+  `${WPP_BASE_PATH}/invite`,
+  // `/wpp/u/<handle>` — the public profile behind an @username. Same reasoning
+  // as the invite page: a link shared with someone who has no account yet has
+  // to show them who it belongs to before asking them to sign up.
+  `${WPP_BASE_PATH}/u`,
+];
 
 /**
  * Does this request belong to the WhatsApp subdomain?

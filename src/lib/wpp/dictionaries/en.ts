@@ -495,4 +495,31 @@ export const en = {
   "select.start": "Select messages",
   "select.clear": "Clear selection",
   "select.deleteConfirm": "Delete {count} messages for you?",
+
+  // ── Public @usernames (Telegram-style) ───────────────────────────────────
+  "username.label": "Username",
+  "username.hint":
+    "People can message you at @{username} without knowing your phone number.",
+  "username.hintEmpty":
+    "Pick a username so people can message you without knowing your phone number.",
+  "username.placeholder": "username",
+  "username.none": "Not set",
+  "username.checking": "Checking…",
+  "username.available": "@{username} is available",
+  "username.taken": "@{username} is already taken",
+  "username.saved": "Username updated",
+  "username.link": "Your link",
+  "username.copyLink": "Copy link",
+  "username.errTooShort": "At least {min} characters",
+  "username.errTooLong": "At most {max} characters",
+  "username.errCharset": "Only letters, digits and underscores",
+  "username.errStart": "Must start with a letter",
+  "username.errEnd": "Can't end with an underscore",
+  "username.errDoubleUnderscore": "No two underscores in a row",
+  "username.errReserved": "That username is reserved",
+  "username.errTaken": "That username is already taken",
+  "newChat.searchHint": "Search by name, @username or phone number",
+  "newChat.usernameNotFound": "No one on {app} uses @{username}",
+  "newChat.byUsername": "Message @{username}",
+  "profile.username": "Username",
 } as const;

@@ -387,6 +387,15 @@ model WaUser {
   id           String  @id @default(cuid())
   /// E.164, e.g. "+541123456789". Normalised by lib/wpp/phone.ts before write.
   phone        String  @unique
+  /// Telegram-style public handle. Optional, and the *only* way to reach
+  /// somebody without knowing their phone number — which is the point: sharing
+  /// `@ada` gives away nothing you can call.
+  ///
+  /// Stored lowercase and matched exactly. Usernames are case-insensitive in
+  /// every app that has them, and a single normalised column makes that
+  /// impossible to get wrong — as opposed to a display column plus a lowercase
+  /// mirror, where the two can drift.
+  username     String? @unique
   name         String
   about        String  @default("Hey there! I am using Talkaroo.")
   passwordHash String

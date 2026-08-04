@@ -73,6 +73,7 @@ const peerUserSelect = {
   id: true,
   name: true,
   phone: true,
+  username: true,
   about: true,
   avatarUrl: true,
   lastSeenAt: true,
@@ -87,6 +88,7 @@ type PeerUser = {
   id: string;
   name: string;
   phone: string;
+  username: string | null;
   about: string;
   avatarUrl: string | null;
   lastSeenAt: Date | null;
@@ -570,6 +572,7 @@ export async function getChatDetail(
             ? m.user.name
             : directTitle(m.user, contacts, isSaved),
         phone: m.user.deactivatedAt ? null : m.user.phone,
+        username: m.user.deactivatedAt ? null : m.user.username,
         avatarUrl: profile.avatarUrl,
         about: profile.about,
         role: m.role,

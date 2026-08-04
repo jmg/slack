@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { WaAvatar } from "@/components/wpp/wa-avatar";
+import { UsernameField } from "@/components/wpp/username-field";
 import { useMe, useT } from "@/components/wpp/i18n-provider";
 import { WppLangToggle } from "@/components/wpp/wa-lang-toggle";
 import { wppError, wppFetch, wppKeys } from "@/lib/wpp/client";
@@ -320,6 +321,15 @@ function ProfileSection({
           maxLength={60}
           onSave={(value) => patchMe({ name: value })}
         />
+      </Card>
+
+      {/* Between the name and the about text, because it is the other half of
+          the identity: the name people read, the handle people type. It brings
+          its own editor rather than borrowing `InlineField` — a handle is
+          global, so it has a live availability check the local fields never
+          need. */}
+      <Card>
+        <UsernameField me={me} />
       </Card>
 
       <Card>

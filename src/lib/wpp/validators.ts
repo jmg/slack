@@ -11,6 +11,7 @@ import {
   isDisappearingPreset,
 } from "@/lib/wpp/config";
 import { WPP_LOCALES } from "@/lib/wpp/i18n";
+import { isValidUsername, normalizeUsername } from "@/lib/wpp/username";
 import { MAX_WPP_FILES_PER_MESSAGE } from "@/lib/wpp/upload-limits";
 
 /**
@@ -93,6 +94,19 @@ export const waProfileSchema = z.object({
 const visibility = z.enum(["EVERYONE", "CONTACTS", "NOBODY"]);
 
 export const waSettingsSchema = z.object({
+  /**
+   * The public handle. `null` clears it. Validated with the shared rules so the
+   * settings form and this schema can never disagree about what is legal.
+   */
+  username: z
+    .string()
+    .trim()
+    .nullable()
+    .refine((v) => v === null || v === "" || isValidUsername(v), {
+      message: "validate.invalidInput",
+    })
+    .transform((v) => (v === null || v === "" ? null : normalizeUsername(v)))
+    .optional(),
   locale: z.enum(WPP_LOCALES).optional(),
   theme: z.enum(WPP_THEMES as [string, ...string[]]).optional(),
   wallpaper: z

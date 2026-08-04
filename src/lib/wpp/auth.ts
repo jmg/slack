@@ -93,6 +93,7 @@ export function serializeMe(user: WaUserRow): WaMe {
     id: user.id,
     name: user.name,
     phone: user.phone,
+    username: user.username,
     about: user.about,
     avatarUrl: user.avatarUrl,
     locale: (isWppLocale(user.locale) ? user.locale : "en") as WaMe["locale"],

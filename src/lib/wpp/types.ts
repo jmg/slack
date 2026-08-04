@@ -208,6 +208,7 @@ export type WaChatMemberInfo = {
   id: string;
   name: string;
   phone: string | null;
+  username: string | null;
   avatarUrl: string | null;
   about: string | null;
   role: "ADMIN" | "MEMBER";
@@ -240,6 +241,7 @@ export type WaContactItem = {
   id: string;
   name: string;
   phone: string | null;
+  username: string | null;
   avatarUrl: string | null;
   about: string | null;
   online: boolean;
@@ -253,6 +255,8 @@ export type WaMe = {
   id: string;
   name: string;
   phone: string;
+  /** Public @handle, lowercase and without the "@". Null when unset. */
+  username: string | null;
   about: string;
   avatarUrl: string | null;
   locale: "en" | "es";

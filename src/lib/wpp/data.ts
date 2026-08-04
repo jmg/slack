@@ -371,6 +371,7 @@ export async function listWaContactItems(
         id: true,
         name: true,
         phone: true,
+        username: true,
         about: true,
         avatarUrl: true,
         lastSeenAt: true,
@@ -421,6 +422,9 @@ export async function listWaContactItems(
         id: person.id,
         name: aliasById.get(person.id) ?? person.name,
         phone: person.phone,
+        // The handle is public by design — it is the reachable-without-a-number
+        // identifier, so no privacy setting gates it.
+        username: person.username,
         avatarUrl:
           !hidden && canSeeField(person.avatarPrivacy, opts)
             ? person.avatarUrl

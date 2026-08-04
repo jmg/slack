@@ -494,4 +494,31 @@ export const es: WppDict = {
   "select.start": "Seleccionar mensajes",
   "select.clear": "Quitar selección",
   "select.deleteConfirm": "¿Eliminar {count} mensajes para ti?",
+
+  // ── @usuarios públicos (estilo Telegram) ─────────────────────────────────
+  "username.label": "Nombre de usuario",
+  "username.hint":
+    "Pueden escribirte a @{username} sin conocer tu número de teléfono.",
+  "username.hintEmpty":
+    "Elige un nombre de usuario para que puedan escribirte sin conocer tu número.",
+  "username.placeholder": "usuario",
+  "username.none": "Sin definir",
+  "username.checking": "Comprobando…",
+  "username.available": "@{username} está disponible",
+  "username.taken": "@{username} ya está en uso",
+  "username.saved": "Nombre de usuario actualizado",
+  "username.link": "Tu enlace",
+  "username.copyLink": "Copiar enlace",
+  "username.errTooShort": "Al menos {min} caracteres",
+  "username.errTooLong": "Como máximo {max} caracteres",
+  "username.errCharset": "Solo letras, números y guiones bajos",
+  "username.errStart": "Tiene que empezar con una letra",
+  "username.errEnd": "No puede terminar con guion bajo",
+  "username.errDoubleUnderscore": "No puede tener dos guiones bajos seguidos",
+  "username.errReserved": "Ese nombre de usuario está reservado",
+  "username.errTaken": "Ese nombre de usuario ya está en uso",
+  "newChat.searchHint": "Busca por nombre, @usuario o número",
+  "newChat.usernameNotFound": "Nadie en {app} usa @{username}",
+  "newChat.byUsername": "Escribirle a @{username}",
+  "profile.username": "Nombre de usuario",
 };

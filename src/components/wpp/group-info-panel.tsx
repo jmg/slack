@@ -85,6 +85,17 @@ export function GroupInfoPanel({
   const canEditInfo =
     isGroup && isMember && (isAdmin || chat?.onlyAdminsCanEditInfo === false);
 
+  /**
+   * The other person's public `@handle`, looked up in the member list because
+   * that is where the payload carries it — `peer` describes the chat, `members`
+   * describes the accounts. No privacy gate: a handle is published precisely so
+   * it can be shown to whoever has it.
+   */
+  const peerId = chat?.peer?.id;
+  const peerUsername = peerId
+    ? (chat?.members.find((member) => member.id === peerId)?.username ?? null)
+    : null;
+
   async function patchChat(json: Record<string, unknown>): Promise<boolean> {
     try {
       const updated = await wppFetch<WaChatDetail>(wppKeys.chat(chatId), {
@@ -333,6 +344,14 @@ export function GroupInfoPanel({
                       </span>
                     )}
                   </p>
+                  {peerUsername && (
+                    <>
+                      <PanelLabel>{t("profile.username")}</PanelLabel>
+                      <p className="text-sm text-[var(--wa-text)]">
+                        @{peerUsername}
+                      </p>
+                    </>
+                  )}
                   {chat.peer.phone && (
                     <>
                       <PanelLabel>{t("settings.phone")}</PanelLabel>
