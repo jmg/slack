@@ -1,9 +1,9 @@
 import { cache } from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
 import { getCurrentWaUser } from "@/lib/wpp/auth";
 import { WPP_LOCALE_COOKIE, resolveWppLocale, translate } from "@/lib/wpp/i18n";
-import { DEFAULT_WALLPAPER, isWppTheme } from "@/lib/wpp/config";
+import { DEFAULT_WALLPAPER, WPP_BASE_PATH, isWppTheme } from "@/lib/wpp/config";
 import { WppLocaleProvider } from "@/components/wpp/i18n-provider";
 import { WppThemeWatcher } from "@/components/wpp/theme-watcher";
 
@@ -41,8 +41,32 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: translate(locale, "app.name"),
     description: translate(locale, "app.description"),
+    // Overrides the root layout's manifest, which describes the Slack half.
+    manifest: `${WPP_BASE_PATH}/manifest.webmanifest`,
+    // iOS ignores the manifest entirely: "Add to Home Screen" reads these.
+    appleWebApp: {
+      capable: true,
+      title: translate(locale, "app.name"),
+      statusBarStyle: "black-translucent",
+    },
+    icons: {
+      icon: [{ url: "/wpp/icon-192.png", sizes: "192x192", type: "image/png" }],
+      apple: [{ url: "/wpp/apple-touch-icon.png", sizes: "180x180" }],
+    },
   };
 }
+
+/**
+ * Deepest layout wins, so this replaces the Slack half's purple chrome for
+ * every `/wpp` route — the colour behind the status bar in a standalone window.
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#00a884" },
+    { media: "(prefers-color-scheme: dark)", color: "#111b21" },
+  ],
+  viewportFit: "cover",
+};
 
 /**
  * Root of the WhatsApp clone.

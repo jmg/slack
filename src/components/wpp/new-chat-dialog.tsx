@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WaAvatar } from "@/components/wpp/wa-avatar";
 import { NewGroupDialog } from "@/components/wpp/new-group-dialog";
+import { AddContactDialog } from "@/components/wpp/add-contact-dialog";
 import { useMe, useT } from "@/components/wpp/i18n-provider";
 import { wppError, wppFetch, wppKeys } from "@/lib/wpp/client";
 import { formatPhone } from "@/lib/wpp/phone";
@@ -44,6 +45,7 @@ export function NewChatDialog({
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   const { data } = useSWR<{ contacts: WaContactItem[] }>(
     open ? wppKeys.contacts : null,
@@ -116,6 +118,22 @@ export function NewChatDialog({
               </span>
               <span className="text-sm font-medium text-[var(--wa-text)]">
                 {t("newChat.newGroup")}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onOpenChange(false);
+                setAddOpen(true);
+              }}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-[var(--wa-hover)]"
+            >
+              <span className="flex size-10 items-center justify-center rounded-full bg-[var(--wa-app)] text-[var(--wa-green)]">
+                <UserPlus className="size-5" />
+              </span>
+              <span className="text-sm font-medium text-[var(--wa-text)]">
+                {t("newChat.addContact")}
               </span>
             </button>
 
@@ -203,6 +221,7 @@ export function NewChatDialog({
       </Dialog>
 
       <NewGroupDialog open={groupOpen} onOpenChange={setGroupOpen} />
+      <AddContactDialog open={addOpen} onOpenChange={setAddOpen} onAdded={onPick} />
     </>
   );
 }

@@ -21,16 +21,21 @@ function isWppKey(value: string): value is WppKey {
 /**
  * Turn a thrown error into a sentence in the reader's language.
  *
- * The window constants are always supplied: the two keys that need them
- * ("editable for 15 minutes") are thrown by the server, which has no way to
- * interpolate them into a key. Extra vars are ignored by `t()`, so passing them
- * unconditionally is free.
+ * Every variable any server-thrown key needs is supplied unconditionally: the
+ * server returns a key, not a sentence, so it has no way to fill the
+ * placeholders itself. Miss one and the user reads the placeholder verbatim —
+ * "Nadie en {app} usa ese número". Extra vars are ignored by `t()`, so passing
+ * them all is free.
+ *
+ * Keys currently thrown with a placeholder: `newChat.notFound` ({app}) and
+ * `message.editWindowExpired` ({minutes}).
  */
 export function wppError(err: unknown, t: Translate): string {
   const raw = err instanceof Error ? err.message : String(err ?? "");
   if (!raw) return t("common.somethingWrong");
   return isWppKey(raw)
     ? t(raw, {
+        app: t("app.name"),
         minutes: Math.round(EDIT_WINDOW_MS / 60_000),
         hours: Math.round(DELETE_FOR_EVERYONE_WINDOW_MS / 3_600_000),
       })
