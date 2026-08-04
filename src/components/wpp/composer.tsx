@@ -456,8 +456,10 @@ export function Composer({
         </div>
       )}
 
+      {/* Capped and scrollable: ten queued files used to grow the composer until
+          the conversation above it had nowhere left to go. */}
       {attachments.length > 0 && (
-        <ul className="flex flex-wrap gap-2 px-4 pt-2">
+        <ul className="wa-scroll flex max-h-28 flex-wrap gap-2 overflow-y-auto px-4 pt-2">
           {attachments.map((attachment) => (
             <li
               key={attachment.id}

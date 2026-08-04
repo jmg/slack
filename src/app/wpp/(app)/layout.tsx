@@ -26,8 +26,16 @@ export default async function WppAppLayout({
       <WppRealtimeProvider>
         <div className="flex h-dvh flex-1 overflow-hidden bg-[var(--wa-app)]">
           <WaRail />
-          {/* pb-14 clears the phone tab bar; the rail is a column from md up. */}
-          <div className="flex min-w-0 flex-1 pb-14 md:pb-0">{children}</div>
+          {/*
+            pb-14 clears the phone tab bar; the rail is a column from md up.
+
+            `min-h-0` matters as much as the height above it: a flex child
+            defaults to `min-height: auto`, so it refuses to shrink below its
+            content. Without it the message list pushes this row past the
+            viewport, the composer slides off the bottom, and the *page*
+            scrolls instead of the conversation.
+          */}
+          <div className="flex min-h-0 min-w-0 flex-1 pb-14 md:pb-0">{children}</div>
         </div>
       </WppRealtimeProvider>
     </WppMeProvider>

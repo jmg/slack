@@ -117,7 +117,7 @@ export function ChatListPanel({
   return (
     <div
       className={cn(
-        "flex w-full shrink-0 flex-col border-r border-[var(--wa-border)] bg-[var(--wa-panel)] md:w-[30rem] md:max-w-[40%]",
+        "flex min-h-0 w-full shrink-0 flex-col border-r border-[var(--wa-border)] bg-[var(--wa-panel)] md:w-[30rem] md:max-w-[40%]",
         // On a phone the list and the conversation are one screen each, so the
         // list steps aside as soon as a chat is open.
         params?.chatId && "hidden md:flex",
@@ -192,7 +192,7 @@ export function ChatListPanel({
 
       {!isArchivedView && <NotificationPrompt />}
 
-      <div className="wa-scroll flex-1 overflow-y-auto">
+      <div className="wa-scroll min-h-0 flex-1 overflow-y-auto">
         {!isArchivedView && (archivedData?.chats.length ?? 0) > 0 && (
           <Link
             href={wpp("/archived")}

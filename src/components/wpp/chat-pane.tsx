@@ -300,8 +300,8 @@ export function ChatPane({ chatId }: { chatId: string }) {
         : null;
 
   return (
-    <div className="flex min-w-0 flex-1">
-      <div className="wa-wallpaper flex min-w-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1">
+      <div className="wa-wallpaper flex min-h-0 min-w-0 flex-1 flex-col">
         {selected.length > 0 ? (
           <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--wa-border)] bg-[var(--wa-header)] px-3">
             <button
@@ -437,7 +437,7 @@ export function ChatPane({ chatId }: { chatId: string }) {
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="wa-scroll relative flex-1 overflow-y-auto py-3"
+          className="wa-scroll relative min-h-0 flex-1 overflow-y-auto py-3"
         >
           {page?.hasMore && (
             <div className="flex justify-center pb-3">
