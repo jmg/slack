@@ -24,7 +24,19 @@ export default async function WppAppLayout({
   return (
     <WppMeProvider me={serializeMe(user)}>
       <WppRealtimeProvider>
-        <div className="flex h-dvh flex-1 overflow-hidden bg-[var(--wa-app)]">
+        {/*
+          Exactly one viewport tall, and it must stay that way — everything
+          below relies on inheriting a *definite* height.
+
+          Do not add `flex-1` here. This element is a flex item of #wpp-root
+          (a column), and `flex: 1 1 0%` sets a flex-basis that overrides
+          `height` in the main axis. Because #wpp-root is only `min-h-dvh`,
+          the basis then resolves against content: grow the composer and this
+          box grows with it, past the viewport, until the *page* scrolls
+          instead of the conversation. `h-dvh` alone works because a basis of
+          `auto` defers back to the height.
+        */}
+        <div className="flex h-dvh overflow-hidden bg-[var(--wa-app)]">
           <WaRail />
           {/*
             pb-14 clears the phone tab bar; the rail is a column from md up.

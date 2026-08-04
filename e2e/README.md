@@ -62,6 +62,8 @@ the block is skipped and that URL is used instead.
 | `group.spec.ts` | Creating a group from the new-chat dialog, the "created this group" / "added …" system messages, and adding and removing a participant from group info. |
 | `i18n.spec.ts` | The EN→ES toggle: a Spanish string appears, the `wpp_locale` cookie is set, and the choice survives a reload. |
 | `privacy.spec.ts` | Blocking a contact from the contact-info panel replaces the composer with the blocked banner — and unblocking gives it back. |
+| `username.spec.ts` | Public @usernames: setting one from Settings → Profile with the live availability line, an illegal handle refused client-side with no request, the `/wpp/u/<handle>` profile rendering **signed out**, and the new-chat search opening a chat from `@handle`. |
+| `regressions.spec.ts` | Three fixed bugs, each locked down by the test that would have caught it: the composer must empty on Enter rather than when the POST returns (and hand the text back if it fails), the EN/ES toggle must repaint without waiting for its PATCH, and no server error key may ever reach the reader with an unfilled `{placeholder}`. |
 
 ## How they're written
 
@@ -73,7 +75,11 @@ the block is skipped and that URL is used instead.
   strings the suite leans on.
 - **No `waitForTimeout`.** Every wait is a web-first assertion
   (`expect(locator).toBeVisible()`) or `page.waitForURL`, which retry until the
-  thing is true or the test times out.
+  thing is true or the test times out. `regressions.spec.ts` does delay
+  *requests* with `page.route()`, which is the opposite thing: the test never
+  sleeps, the server does — and it is the only way to tell an interface that
+  already repainted apart from one still waiting for a round trip, when both
+  answer in 20 ms locally.
 - **Fixtures, not `beforeEach`.** `e2e/fixtures.ts` holds the seed constants and
   the sign-in fixtures. Signing in happens once per account per worker through
   the API, and each test gets a fresh browser context built from that saved
@@ -117,6 +123,10 @@ the block is skipped and that URL is used instead.
   groups created by `group.spec.ts` (each with a run-unique subject) and accounts
   created by the sign-up test all persist. Nothing accumulates in a way that
   breaks a later run, but `npm run db:seed:wpp` is the reset button.
+- **`username.spec.ts` leaves a handle on Emma**, and an empty chat between
+  Olivia and Emma. `WaUser.username` is a unique index, which is why every test
+  there mints a run-unique handle instead of a readable one: a fixed handle
+  would pass once and then collide with the row the previous run left behind.
 - **Rate limits are real.** Sign-up is capped at 10 accounts per hour per IP and
   sign-in at 8 attempts per phone per 15 minutes, both counted in the *dev
   server's* memory — so restarting `next dev` clears them. Running the suite in a

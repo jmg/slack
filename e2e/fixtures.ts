@@ -232,6 +232,18 @@ export async function gotoChats(page: Page): Promise<void> {
 }
 
 /**
+ * Open Settings and reveal one of its sections.
+ *
+ * Pick the section by its *hint* (`en["settings.chatsHint"]`, not
+ * `en["settings.chats"]`): the rows read "<label> <hint>" and the label alone
+ * collides with the heading the row opens.
+ */
+export async function openSettings(page: Page, hint: string): Promise<void> {
+  await page.goto(wpp("/settings"));
+  await page.getByRole("button", { name: hint }).click();
+}
+
+/**
  * A row in the chat list.
  *
  * Filtered on the *title* rather than on the whole row: a group row's preview
@@ -286,6 +298,22 @@ export function deliveryTick(bubble: Locator): Locator {
     en["message.readBy"],
   ];
   return bubble.getByRole("img", { name: new RegExp(`^(${states.join("|")})$`) });
+}
+
+// ── Toasts ──────────────────────────────────────────────────────────────────
+
+/**
+ * The transient messages Sonner renders — every success and every failure the
+ * app reports without a screen of its own.
+ *
+ * `[data-sonner-toast]` is the toast library's own attribute rather than a hook
+ * added to `src/` for the tests, which is the only reason a raw selector is
+ * acceptable here: a toast has no accessible name, only the sentence inside it,
+ * and the sentence is exactly what the specs using this need to *read* instead
+ * of assume.
+ */
+export function toasts(page: Page): Locator {
+  return page.locator("[data-sonner-toast]");
 }
 
 /** Substitute `{placeholders}` in a catalogue entry, the way `translate()` does. */
