@@ -74,7 +74,22 @@ export function ChatPane({ chatId }: { chatId: string }) {
    *  keep in step with it. */
   const [selected, setSelected] = useState<string[]>([]);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * The same node, as state.
+   *
+   * This component returns early until `chat` arrives, so on the first mount
+   * there is no scroller and `scrollRef.current` is still null. An effect that
+   * reads the ref therefore finds nothing, and unless its dependencies happen
+   * to change again it never gets a second chance — which is exactly how the
+   * ResizeObserver below silently never attached. A node tracked as state
+   * re-runs those effects the moment it exists.
+   */
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
+  const attachScroller = useCallback((node: HTMLDivElement | null) => {
+    scrollRef.current = node;
+    setScroller(node);
+  }, []);
   // Monotonic so two identical messages sent in a row get distinct React keys.
   const nextPendingId = useRef(0);
   const typing = useTypingIn(chatId);
@@ -102,20 +117,20 @@ export function ChatPane({ chatId }: { chatId: string }) {
   // own box catches every cause at once (attachments, the reply preview, the
   // edit banner, the phone keyboard) instead of wiring each one up separately.
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el || !atBottom) return;
+    if (!scroller || !atBottom) return;
     const observer = new ResizeObserver(() => scrollToBottom());
-    observer.observe(el);
+    observer.observe(scroller);
     return () => observer.disconnect();
-  }, [atBottom, scrollToBottom]);
+  }, [scroller, atBottom, scrollToBottom]);
 
   // The pane is keyed by chat id upstream, so opening another conversation
   // remounts it: no state to reset here, only the initial jump to the newest
   // message once the first page has painted.
   useEffect(() => {
+    if (!scroller) return;
     const frame = requestAnimationFrame(() => scrollToBottom());
     return () => cancelAnimationFrame(frame);
-  }, [scrollToBottom]);
+  }, [scroller, scrollToBottom]);
 
   /**
    * Advance the read cursor. Fires when the chat opens, when new messages land
@@ -449,7 +464,7 @@ export function ChatPane({ chatId }: { chatId: string }) {
         />
 
         <div
-          ref={scrollRef}
+          ref={attachScroller}
           onScroll={onScroll}
           className="wa-scroll relative min-h-0 flex-1 overflow-y-auto py-3"
         >
