@@ -611,6 +611,13 @@ export async function getChatDetail(
       pinnedAt: { not: null },
       deletedAt: null,
       hides: { none: { userId: me.id } },
+      // Same "clear messages" cursor the timeline uses. Pinning is chat-wide but
+      // clearing is per-user, so without this the bar kept showing the preview
+      // of a message you had just emptied out of the conversation — the chat
+      // read "No messages here yet" with one of them still quoted above it.
+      ...(membership.clearedAt
+        ? { createdAt: { gt: membership.clearedAt } }
+        : {}),
       OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
     },
     include: waMessageInclude,

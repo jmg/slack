@@ -204,19 +204,38 @@ export function MessageBubble({
       )}
     >
       {selecting && (
-        <span
+        /*
+         * A real button, not a labelled <span>.
+         *
+         * Selecting is otherwise mouse-only: the toggle is an onClick on the
+         * row <div>, and select mode hides the two controls a keyboard could
+         * reach (the react button and the message menu), so every row ends up
+         * with no focusable descendant at all. You could select the first
+         * message from the menu and then neither add a second nor deselect it.
+         * A button is tabbable and answers Space and Enter for free.
+         *
+         * stopPropagation because the row's own onClick would otherwise toggle
+         * a second time and cancel this one out.
+         */
+        <button
+          type="button"
           role="checkbox"
           aria-checked={selected}
           aria-label={message.body || t("common.options")}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect(message.id);
+          }}
           className={cn(
             "mt-2 mr-2 flex size-5 shrink-0 items-center justify-center self-start rounded-full border",
+            "outline-none focus-visible:ring-3 focus-visible:ring-[var(--wa-green)]/40",
             selected
               ? "border-transparent bg-[var(--wa-green)] text-[var(--wa-green-ink)]"
               : "border-[var(--wa-divider)]",
           )}
         >
           {selected && <Check className="size-3.5" />}
-        </span>
+        </button>
       )}
       <div
         className={cn(
