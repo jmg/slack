@@ -191,6 +191,10 @@ export function MessageBubble({
       className={cn(
         "group/msg flex px-2 py-px transition-colors",
         mine ? "justify-end" : "justify-start",
+        // The reaction pill hangs below the bubble (-bottom-3) and rows are
+        // only a pixel apart, so without this it lands underneath the next
+        // message — which, being later in the DOM, paints over it.
+        message.reactions.length > 0 && "pb-4",
         highlighted && "permalink-flash",
         selecting && "cursor-pointer",
         selected && "bg-[color-mix(in_srgb,var(--wa-green)_14%,transparent)]",
@@ -320,7 +324,7 @@ export function MessageBubble({
         {message.reactions.length > 0 && (
           <div
             className={cn(
-              "absolute -bottom-3 flex gap-0.5 rounded-full border border-[var(--wa-border)] bg-[var(--wa-panel)] px-1.5 py-0.5 shadow-sm",
+              "absolute -bottom-3 z-10 flex gap-0.5 rounded-full border border-[var(--wa-border)] bg-[var(--wa-panel)] px-1.5 py-0.5 shadow-sm",
               mine ? "right-2" : "left-2",
             )}
           >
