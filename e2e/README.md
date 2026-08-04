@@ -18,7 +18,7 @@ These tests are not hermetic. They need the whole stack up and the WhatsApp
 demo data loaded:
 
 ```sh
-docker compose up -d          # Postgres (or: npm run db:dev)
+docker compose up -d          # Postgres — see the warning below before using db:dev
 npm run prisma:generate       # src/generated/prisma is gitignored
 npm run db:push               # create the tables
 
@@ -36,6 +36,27 @@ plus a `.env` with:
 DATABASE_URL=postgresql://…              # the same database the seed wrote to
 AUTH_SECRET=<at least 32 characters>     # sessions are HS256-signed with it
 ```
+
+> **Use a real Postgres, not `npm run db:dev`.** That script runs `prisma dev`,
+> whose local server speaks the Postgres wire protocol over SQLite, and it does
+> not survive this suite: a run produces dozens of `DriverAdapterError: bind
+> message supplies N parameters, but prepared statement "" requires M`,
+> `portal "" does not exist` and `Connection terminated unexpectedly`. Those
+> surface as *app* failures and they move around between runs — a query that
+> throws inside `requireWaUser()` comes back as a 401, and a failed render shows
+> the error boundary ("This page hit a snag"), so a locale switch or a chat list
+> appears broken when nothing is wrong with it. If you see failures that differ
+> run to run, check the server log for `DriverAdapterError` before believing
+> them. (`prisma dev` also needs Node 22+ — it imports `node:sqlite`.)
+
+Two more things that make a green run harder than it looks:
+
+- **The login limiter is real.** Eight attempts per account per 15 minutes. The
+  suite signs each account in once per worker, so a single run is fine, but four
+  runs back to back are not: you get `HTTP 429` and a cascade of failures that
+  have nothing to do with the code.
+- **The suite leaves data behind** (see below), and several assertions match on
+  text that then also appears in chat-list previews. Reseed between runs.
 
 `WPP_SEED_PASSWORD` must be exported when you run the tests too, not only when
 you seed — the fixtures fail with an explicit message if it is missing.
