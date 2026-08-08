@@ -1,4 +1,11 @@
 import type { NextConfig } from "next";
+import { BRAND_ORIGIN } from "./src/lib/brand";
+
+const LEGACY_MARKETING_HOSTS = [
+  "slack.devcloudsoftware.com",
+  "slack.deploycloud.app",
+  "www.talkaroo.app",
+];
 
 // Baseline security response headers. TLS is terminated at the platform proxy;
 // HSTS closes the first-visit SSL-strip window, and the rest are cheap
@@ -13,6 +20,14 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return LEGACY_MARKETING_HOSTS.map((host) => ({
+      source: "/:path*",
+      has: [{ type: "host" as const, value: host }],
+      destination: `${BRAND_ORIGIN}/:path*`,
+      permanent: true,
+    }));
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

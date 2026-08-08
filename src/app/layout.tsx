@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { GoogleAnalytics } from "@/components/google-analytics";
-import { BRAND, BRAND_DOMAIN, BRAND_DESCRIPTION } from "@/lib/brand";
+import { BRAND, BRAND_DESCRIPTION, BRAND_ORIGIN } from "@/lib/brand";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -15,13 +15,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL =
-  process.env.APP_BASE_URL?.replace(/\/+$/, "") ?? `https://${BRAND_DOMAIN}`;
-
 const TITLE = `${BRAND} — team messaging that keeps everyone in sync`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+  metadataBase: new URL(BRAND_ORIGIN),
   title: {
     default: TITLE,
     template: `%s · ${BRAND}`,
@@ -42,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: BRAND,
-    url: SITE_URL,
+    url: BRAND_ORIGIN,
     title: TITLE,
     description: BRAND_DESCRIPTION,
     images: [{ url: "/og.png", width: 1200, height: 630, alt: TITLE }],

@@ -17,11 +17,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing";
 import { ChatDemo } from "@/components/chat-demo";
 import { posts } from "@/content/posts";
-import { BRAND, BRAND_DOMAIN, BRAND_TAGLINE, BRAND_DESCRIPTION } from "@/lib/brand";
+import { BRAND, BRAND_DESCRIPTION, BRAND_ORIGIN, BRAND_TAGLINE } from "@/lib/brand";
 import { TEAM_PRICE_USD, FREE_MEMBER_LIMIT } from "@/lib/plans";
 
-const SITE_URL =
-  process.env.APP_BASE_URL?.replace(/\/+$/, "") ?? `https://${BRAND_DOMAIN}`;
+const SITE_URL = BRAND_ORIGIN;
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 

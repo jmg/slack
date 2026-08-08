@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { BRAND_ORIGIN } from "../src/lib/brand";
 import { sendEmail } from "../src/lib/email";
 
 /**
@@ -17,7 +18,7 @@ const prisma = new PrismaClient({ adapter });
 
 const AFTER_MIN = Number(process.env.NOTIFY_AFTER_MINUTES ?? "5");
 const PRESENCE_WINDOW_MS = 2 * 60 * 1000;
-const APP_URL = process.env.APP_BASE_URL ?? "https://slack.deploycloud.app";
+const APP_URL = process.env.APP_BASE_URL ?? BRAND_ORIGIN;
 
 function isOnline(lastSeenAt: Date | null): boolean {
   return !!lastSeenAt && Date.now() - lastSeenAt.getTime() < PRESENCE_WINDOW_MS;

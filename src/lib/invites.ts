@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { BRAND_ORIGIN } from "@/lib/brand";
 
 export const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -40,5 +41,5 @@ export function appBaseUrl(req?: Request): string {
       /* fall through */
     }
   }
-  return "https://slack.devcloudsoftware.com";
+  return BRAND_ORIGIN;
 }

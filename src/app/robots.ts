@@ -1,7 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const SITE_URL =
-  process.env.APP_BASE_URL?.replace(/\/+$/, "") ?? "https://slack.devcloudsoftware.com";
+import { BRAND_ORIGIN } from "@/lib/brand";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -13,6 +11,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/w/", "/workspaces", "/api/", "/invite/"],
       },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: `${BRAND_ORIGIN}/sitemap.xml`,
   };
 }

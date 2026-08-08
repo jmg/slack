@@ -4,10 +4,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing";
 import { getPost, posts } from "@/content/posts";
-import { BRAND, BRAND_DOMAIN } from "@/lib/brand";
+import { BRAND, BRAND_ORIGIN } from "@/lib/brand";
 
-const SITE_URL =
-  process.env.APP_BASE_URL?.replace(/\/+$/, "") ?? `https://${BRAND_DOMAIN}`;
+const SITE_URL = BRAND_ORIGIN;
 
 export function generateStaticParams() {
   return posts.map((p) => ({ slug: p.slug }));

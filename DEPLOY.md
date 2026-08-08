@@ -32,9 +32,12 @@ In the **dashboard**, create the app (the CLI has no `apps create` command):
    `DATABASE_URL` comes from the Postgres addon — do **not** set it by hand.
    `SHADOW_DATABASE_URL` is **not** needed in production (only `migrate dev` uses it).
 4. **Health check path** → `/api/health` (the app's `/` redirects, so use this).
-5. **Custom domain** → add `slack.devcloudsoftware.com` and point DNS at the
-   platform per the dashboard's instructions (A record, or CNAME to the platform
-   host). Traefik provisions a Let's Encrypt cert automatically.
+5. **Custom domain** → add `talkaroo.app` and point DNS at the platform per the
+   dashboard's instructions (A record, or CNAME to the platform host). Keep
+   `www.talkaroo.app`, `slack.devcloudsoftware.com` and `slack.deploycloud.app`
+   attached only as legacy entry points; the app permanently redirects them to
+   `https://talkaroo.app` while preserving the path and query string. Traefik
+   provisions Let's Encrypt certificates automatically.
 
 ## Deploy
 

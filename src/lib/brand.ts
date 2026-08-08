@@ -3,8 +3,9 @@
  * the marketing site, metadata, manifest and transactional emails reference it.
  */
 export const BRAND = "Talkaroo";
-// The live URL is driven by APP_BASE_URL in prod; this is the fallback/canonical.
 export const BRAND_DOMAIN = "talkaroo.app";
+/** Stable public origin used by canonical tags, structured data and sitemaps. */
+export const BRAND_ORIGIN = `https://${BRAND_DOMAIN}`;
 export const BRAND_TAGLINE = "Where your team clicks";
 export const BRAND_DESCRIPTION =
   "Talkaroo is team chat done right — channels, threads, direct messages, mentions, search and file sharing in one fast, friendly place your whole team can run anywhere.";
