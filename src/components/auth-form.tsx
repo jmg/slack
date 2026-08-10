@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BRAND } from "@/lib/brand";
+import { reportGaSignUpBeforeNavigation } from "@/lib/ga4";
 
 type Mode = "login" | "register";
 
@@ -42,8 +43,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
         throw new Error(data.error ?? "Something went wrong");
       }
       const next = searchParams.get("next") || "/workspaces";
-      router.push(next);
-      router.refresh();
+      const navigate = () => {
+        router.push(next);
+        router.refresh();
+      };
+      if (isRegister) {
+        reportGaSignUpBeforeNavigation("email", navigate);
+      } else {
+        navigate();
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
       setLoading(false);
