@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { reportGaSignUpWhenReady } from "@/lib/ga4";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,9 +59,7 @@ export function WaAuthForm({ mode }: { mode: "login" | "register" }) {
         json: isRegister ? { name, phone, password } : { phone, password },
       });
       if (isRegister) {
-        const browser = window as typeof window & { dataLayer?: unknown[] };
-        browser.dataLayer = browser.dataLayer || [];
-        browser.dataLayer.push(["event", "sign_up", { method: "phone" }]);
+        reportGaSignUpWhenReady("phone");
       }
       router.push(safeNext());
       router.refresh();
