@@ -57,6 +57,11 @@ export function WaAuthForm({ mode }: { mode: "login" | "register" }) {
         method: "POST",
         json: isRegister ? { name, phone, password } : { phone, password },
       });
+      if (isRegister) {
+        const browser = window as typeof window & { dataLayer?: unknown[] };
+        browser.dataLayer = browser.dataLayer || [];
+        browser.dataLayer.push(["event", "sign_up", { method: "phone" }]);
+      }
       router.push(safeNext());
       router.refresh();
     } catch (err) {
