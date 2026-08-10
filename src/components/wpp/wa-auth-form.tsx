@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { reportGaSignUpWhenReady } from "@/lib/ga4";
+import { reportGaSignUpBeforeNavigation } from "@/lib/ga4";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,11 +58,15 @@ export function WaAuthForm({ mode }: { mode: "login" | "register" }) {
         method: "POST",
         json: isRegister ? { name, phone, password } : { phone, password },
       });
+      const navigate = () => {
+        router.push(safeNext());
+        router.refresh();
+      };
       if (isRegister) {
-        reportGaSignUpWhenReady("phone");
+        reportGaSignUpBeforeNavigation("phone", navigate);
+      } else {
+        navigate();
       }
-      router.push(safeNext());
-      router.refresh();
     } catch (err) {
       toast.error(wppError(err, t));
       setLoading(false);
