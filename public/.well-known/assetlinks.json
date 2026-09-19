@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.talkaroo.mobile",
+      "sha256_cert_fingerprints": [
+        "79:A4:9E:6C:61:83:1D:DC:DC:F3:6B:6C:E2:77:77:60:91:26:45:F7:A2:27:94:D4:CA:EA:F6:38:9B:28:10:ED"
+      ]
+    }
+  }
+]

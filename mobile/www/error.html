@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Talkaroo · offline</title>
+<!-- Capacitor shows this (server.errorPath) when the site cannot be reached,
+     typically a first launch with no signal. Without it the WebView shows
+     Chrome's raw error page, which reads as a broken app. -->
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid; place-items: center; padding: 24px;
+    background: #ffffff; color: #1a1d21;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .card { max-width: 22rem; text-align: center; }
+  h1 { font-size: 1.15rem; margin: 0 0 .5rem; }
+  p { margin: 0 0 1.25rem; font-size: .92rem; line-height: 1.55; color: #6b7280; }
+  button {
+    background: #7c3aed; color: #fff; border: 0; border-radius: 10px;
+    padding: .7rem 1.2rem; font-size: .95rem; font-weight: 600; font-family: inherit;
+  }
+</style>
+<div class="card">
+  <h1>No connection</h1>
+  <p>Talkaroo needs the network to load your channels. Nothing is lost: every message your team sent is safe on the server.</p>
+  <button onclick="location.replace('https://talkaroo.app/workspaces')">Try again</button>
+</div>

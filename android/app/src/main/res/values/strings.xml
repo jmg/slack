@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Talkaroo</string>
+    <string name="title_activity_main">Talkaroo</string>
+    <string name="package_name">app.talkaroo.mobile</string>
+    <string name="custom_url_scheme">app.talkaroo.mobile</string>
+</resources>

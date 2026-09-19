@@ -56,3 +56,12 @@ next-env.d.ts
 /v.txt
 *.cookies
 AUDIT-2026-07.md
+
+# Android shell (Capacitor): signing credentials and local SDK paths.
+# The .jks lives in ~/.keystores/, never in the repo.
+/android/keystore.properties
+/android/local.properties
+/android/.gradle
+/android/app/build
+/android/build
+/android/capacitor-cordova-android-plugins/build
