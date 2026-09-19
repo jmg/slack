@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "885464057836",
+    "project_id": "devcloud-apps",
+    "storage_bucket": "devcloud-apps.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:885464057836:android:72097258192001d3ace2c9",
+        "android_client_info": {
+          "package_name": "app.talkaroo.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXUR9C6pWBa7WzGpi6XKjRuolgv42wiyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

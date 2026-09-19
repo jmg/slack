@@ -2,6 +2,7 @@ import "server-only";
 import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
 import { BROADCAST_MENTIONS, isOnline, mentionHandle } from "@/lib/mentions";
+import { nativePushConfigured, sendNativePushToUser } from "@/lib/push-native";
 
 // Web Push (VAPID). Lazily configured so `next build` / a deploy without VAPID
 // keys works fine — push just no-ops until the keys are set.
@@ -58,7 +59,10 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
  * Skips the author and anyone currently active in the app. Fire-and-forget.
  */
 export async function sendPushForMessage(messageId: string): Promise<void> {
-  if (!pushConfigured()) return;
+  // Either channel alone is enough to be worth the lookup: the browser one
+  // needs VAPID, the phone one needs a Firebase service account, and they are
+  // configured independently.
+  if (!pushConfigured() && !nativePushConfigured()) return;
   const msg = await prisma.message.findUnique({
     where: { id: messageId },
     select: {
@@ -123,5 +127,14 @@ export async function sendPushForMessage(messageId: string): Promise<void> {
   recipients = recipients.filter((r) => !isOnline(r.lastSeenAt));
   if (recipients.length === 0) return;
 
-  await Promise.all(recipients.map((r) => sendPushToUser(r.userId, { title, body, url })));
+  // Both channels, same recipients: browsers and the installed PWA over Web
+  // Push, phones running the Android app over FCM. Someone with both gets the
+  // message wherever they are — the app can't receive the web one, and a
+  // browser can't receive the native one.
+  await Promise.all(
+    recipients.flatMap((r) => [
+      sendPushToUser(r.userId, { title, body, url }),
+      sendNativePushToUser(r.userId, { title, body, url }),
+    ]),
+  );
 }

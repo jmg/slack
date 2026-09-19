@@ -5,6 +5,7 @@ import { WorkspaceRail } from "@/components/workspace-rail";
 import { WorkspaceSidebar } from "@/components/workspace-sidebar";
 import { WorkspaceShell } from "@/components/workspace-shell";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
+import { NativePush } from "@/components/native-push";
 import { WorkspaceRealtime } from "@/components/workspace-realtime";
 import { WorkspaceNotifications } from "@/components/workspace-notifications";
 import { isOnline } from "@/lib/mentions";
@@ -91,6 +92,7 @@ export default async function WorkspaceLayout({
 
   return (
     <>
+      <NativePush />
       <PresenceHeartbeat workspaceId={workspaceId} />
       <WorkspaceRealtime workspaceId={workspaceId} />
       <WorkspaceNotifications

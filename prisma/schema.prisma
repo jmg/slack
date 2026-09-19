@@ -16,30 +16,30 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  image        String?
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String
+  passwordHash       String
+  image              String?
   /// Bumped to invalidate every outstanding session for this user (logout,
   /// password change, forced sign-out). The signed JWT carries the value it was
   /// issued at; getCurrentUser rejects the token when they no longer match.
-  tokenVersion Int      @default(0)
+  tokenVersion       Int       @default(0)
   /// Email me about messages I haven't seen (see the notify-emails cron).
-  emailNotifications Boolean @default(true)
+  emailNotifications Boolean   @default(true)
   /// Dedupe cursor for that cron: messages created at/before this have already
   /// been considered for an email, so we never notify the same message twice.
-  lastNotifiedAt DateTime?
+  lastNotifiedAt     DateTime?
   /// Sidebar color theme key (see src/lib/themes.ts).
-  chatTheme    String   @default("aubergine")
+  chatTheme          String    @default("aubergine")
   /// Set when the account is deleted: PII is scrubbed and the user can no longer
   /// authenticate (getCurrentUser rejects them). Messages stay, authored by a
   /// "Deleted user" placeholder, so others' threads survive.
-  deactivatedAt DateTime?
+  deactivatedAt      DateTime?
   /// Heartbeat from the client; drives the online/offline presence dot.
-  lastSeenAt   DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  lastSeenAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   ownedWorkspaces     Workspace[]          @relation("WorkspaceOwner")
   memberships         WorkspaceMember[]
@@ -49,6 +49,7 @@ model User {
   reactions           Reaction[]
   readStates          ReadState[]
   pushSubscriptions   PushSubscription[]
+  deviceTokens        DeviceToken[]
   attachments         Attachment[]
   createdChannels     Channel[]            @relation("ChannelCreator")
   createdInvites      Invite[]             @relation("InviteCreator")
@@ -97,19 +98,19 @@ model WorkspaceMember {
 }
 
 model Channel {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   name        String
   description String?
-  isPrivate   Boolean  @default(false)
+  isPrivate   Boolean   @default(false)
   /// Set when the channel is archived: hidden from posting, kept for history.
   archivedAt  DateTime?
   /// Who created the channel. Nullable so pre-existing rows can be backfilled
   /// and so the reference survives the creator being deleted. A channel with no
   /// creator can only be managed by workspace ADMINs.
   createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   workspace  Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdBy  User?           @relation("ChannelCreator", fields: [createdById], references: [id], onDelete: SetNull)
@@ -162,7 +163,7 @@ model ConversationMember {
 }
 
 model Message {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   body           String
   userId         String
   channelId      String?
@@ -170,8 +171,8 @@ model Message {
   parentId       String?
   editedAt       DateTime?
   deletedAt      DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   channel      Channel?      @relation(fields: [channelId], references: [id], onDelete: Cascade)
@@ -318,6 +319,26 @@ model LinkPreview {
 
 /// A browser Web Push subscription (one per device/browser) for delivering
 /// mention/DM notifications when the app is closed. See src/lib/push.ts.
+/// A phone running the Android app, addressed through FCM.
+///
+/// The app cannot use Web Push: its WebView has no Push API, so a
+/// PushSubscription can never exist there. It registers an FCM token instead
+/// (POST /api/devices) and push.ts delivers to both channels side by side.
+model DeviceToken {
+  id         String   @id @default(cuid())
+  /// FCM rotates these, so the app re-reports on every launch and the row is
+  /// keyed by the token itself: a reinstall replaces it instead of piling up.
+  token      String   @unique
+  platform   String   @default("android")
+  userId     String
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model PushSubscription {
   id        String   @id @default(cuid())
   userId    String
@@ -496,20 +517,20 @@ model WaChat {
 /// One participant's view of a chat: their role, their read cursor, and all the
 /// per-user chat state WhatsApp keeps (pinned / archived / muted / cleared).
 model WaChatMember {
-  id     String       @id @default(cuid())
-  chatId String
-  userId String
-  role   WaMemberRole @default(MEMBER)
-  joinedAt DateTime   @default(now())
+  id       String       @id @default(cuid())
+  chatId   String
+  userId   String
+  role     WaMemberRole @default(MEMBER)
+  joinedAt DateTime     @default(now())
   /// Set when the member leaves or is removed. The row is kept so their old
   /// messages still resolve a sender and the system messages make sense.
   leftAt   DateTime?
 
   /// Read cursor — anything newer is unread. Also what turns *other people's*
   /// ticks blue, but only when this user has readReceipts on.
-  lastReadAt      DateTime  @default(now())
+  lastReadAt      DateTime @default(now())
   /// Delivery cursor — advanced whenever this user's client is connected.
-  lastDeliveredAt DateTime  @default(now())
+  lastDeliveredAt DateTime @default(now())
 
   pinnedAt   DateTime?
   archivedAt DateTime?
@@ -549,19 +570,19 @@ model WaMessage {
   systemAction String?
   systemMeta   String?
 
-  editedAt  DateTime?
+  editedAt   DateTime?
   /// "Delete for everyone" — tombstoned, body blanked on serialize, so replies
   /// that quote it still resolve.
-  deletedAt DateTime?
+  deletedAt  DateTime?
   /// Set at send time when the chat has a disappearing timer. Past this instant
   /// the message is filtered out of every read and swept by the cleanup in
   /// lib/wpp/disappearing.ts.
-  expiresAt DateTime?
+  expiresAt  DateTime?
   /// Pinned to the top of the chat, for everyone. WhatsApp allows several pins
   /// per chat, so this is a column on the message rather than one on the chat.
   pinnedAt   DateTime?
   pinnedById String?
-  createdAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
 
   chat        WaChat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
   sender      WaUser?         @relation(fields: [senderId], references: [id], onDelete: SetNull)
@@ -714,7 +735,7 @@ model WaAttachment {
   /// readable by any signed-in account (its id is unguessable and privacy is
   /// enforced when deciding whether to hand the URL out at all), and status
   /// media follows the status's own visibility.
-  purpose    WaAttachmentPurpose @default(MESSAGE)
+  purpose WaAttachmentPurpose @default(MESSAGE)
 
   /// Null while pending, set when the message is sent (same transaction).
   messageId  String?
