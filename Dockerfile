@@ -3,7 +3,7 @@
 # ---- Build stage: install all deps, generate Prisma client, build Next ----
 # NODE_ENV is left unset so `npm ci` installs devDependencies (needed to build)
 # while `next build` still produces a production build.
-FROM node:22-slim AS build
+FROM node:22.23.4-slim AS build
 WORKDIR /app
 
 # OpenSSL is handy for Prisma; ca-certificates for outbound TLS at runtime.
@@ -20,7 +20,7 @@ RUN npx prisma generate && npm run build
 
 # ---- Runner stage: full app + deps so `next start`, `prisma migrate deploy`
 #      (release) and the seed script are all available at runtime. ----
-FROM node:22-slim AS runner
+FROM node:22.23.4-slim AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
 WORKDIR /app
