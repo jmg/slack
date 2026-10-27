@@ -3,6 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { BRAND_ORIGIN } from "../src/lib/brand";
 import { sendEmail } from "../src/lib/email";
+import { ABUSE_EMAIL, escapeHtml, plainName } from "../src/lib/email-safety";
 
 /**
  * Email people about messages they haven't seen. Meant to run on a schedule
@@ -24,11 +25,13 @@ function isOnline(lastSeenAt: Date | null): boolean {
   return !!lastSeenAt && Date.now() - lastSeenAt.getTime() < PRESENCE_WINDOW_MS;
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
-  );
-}
+// Signup doesn't check the address, so the account's name (which anyone can
+// type) may reach someone else's inbox: plain text, no links (plainName), and
+// a footer saying how to stop these and where to report them.
+const FOOTER_TEXT =
+  `You get these because email notifications are on for your Talkaroo account; turn them off in Settings. ` +
+  `Didn't create a Talkaroo account? Forward this email to ${ABUSE_EMAIL}.`;
+const FOOTER_HTML = `<p style="font-size:12px;color:#8b8a8b">${escapeHtml(FOOTER_TEXT)}</p>`;
 
 async function main() {
   const now = new Date();
@@ -110,11 +113,12 @@ async function main() {
 
     if (unread > 0) {
       const plural = unread === 1 ? "" : "s";
+      const name = plainName(user.name, "there");
       const ok = await sendEmail({
         to: user.email,
         subject: `You have ${unread} unread message${plural} in Talkaroo`,
-        text: `Hi ${user.name},\n\nYou have ${unread} unread message${plural} waiting.\nOpen ${APP_URL} to catch up.\n\n— Talkaroo`,
-        html: `<p>Hi ${escapeHtml(user.name)},</p><p>You have <strong>${unread}</strong> unread message${plural} waiting.</p><p><a href="${APP_URL}">Open Talkaroo to catch up →</a></p>`,
+        text: `Hi ${name},\n\nYou have ${unread} unread message${plural} waiting.\nOpen ${APP_URL} to catch up.\n\n— Talkaroo\n\n${FOOTER_TEXT}`,
+        html: `<p>Hi ${escapeHtml(name)},</p><p>You have <strong>${unread}</strong> unread message${plural} waiting.</p><p><a href="${APP_URL}">Open Talkaroo to catch up →</a></p>${FOOTER_HTML}`,
       });
       if (ok) emailed += 1;
       console.log(`${user.email}: ${unread} unread (emailed: ${ok})`);

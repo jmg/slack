@@ -67,7 +67,8 @@ export function InviteDialog({
       if (!res.ok) throw new Error(data.error ?? "Could not invite them");
       if (data.invited) {
         // No account yet — we emailed them the invite link. If email delivery
-        // failed (SendGrid down/unconfigured), fall back to copying the link.
+        // failed (SendGrid down/unconfigured) or a daily invitation-email limit
+        // was reached (`notice`), fall back to copying the link.
         if (data.emailed) {
           toast.success(`Invite emailed to ${value}`);
         } else {
@@ -75,7 +76,11 @@ export function InviteDialog({
             ? `${window.location.origin}/invite/${data.token}`
             : url;
           if (link) await navigator.clipboard.writeText(link).catch(() => {});
-          toast.info(`Couldn't email ${value} — invite link copied, send it to them.`);
+          toast.info(
+            data.notice
+              ? `${data.notice} Invite link copied — send it to ${value} yourself.`
+              : `Couldn't email ${value} — invite link copied, send it to them.`,
+          );
         }
         setEmail("");
         return;
@@ -83,7 +88,9 @@ export function InviteDialog({
       toast.success(
         data.emailed
           ? `${data.name} was added and emailed`
-          : `${data.name} was added to the workspace`,
+          : data.notice
+            ? `${data.name} was added to the workspace (not emailed: ${data.notice})`
+            : `${data.name} was added to the workspace`,
       );
       setEmail("");
       // Refresh the member list wherever it's shown.

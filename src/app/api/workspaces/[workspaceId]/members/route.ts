@@ -11,6 +11,8 @@ import { recordAudit } from "@/lib/audit";
 import { sendEmail } from "@/lib/email";
 import { appBaseUrl, getOrCreateInvite } from "@/lib/invites";
 import { BRAND } from "@/lib/brand";
+import { escapeHtml, inviteFooter, plainName } from "@/lib/email-safety";
+import { reserveInviteEmail } from "@/lib/invite-emails";
 
 export async function GET(
   _req: NextRequest,
@@ -57,8 +59,12 @@ export async function GET(
  * account we add them straight away and email a heads-up; if not, we email them
  * the workspace invite link so they can sign up and join — the admin never has
  * to copy/paste a link manually. Email delivery is best-effort: when SendGrid is
- * unconfigured or fails we still return the invite token so the client can fall
- * back to sharing the link.
+ * unconfigured or fails, or the daily invitation-email limits are reached
+ * (email-safety.ts; `notice` says which), we still return the invite token so
+ * the client can fall back to sharing the link.
+ *
+ * The names in these emails are typed by whoever signed up, so they go out as
+ * plain text without links (plainName), with a footer saying who sent it.
  */
 export async function POST(
   req: NextRequest,
@@ -90,9 +96,10 @@ export async function POST(
       where: { id: workspaceId },
       select: { name: true },
     });
-    const workspaceName = workspace?.name ?? "the workspace";
+    const workspaceName = plainName(workspace?.name, "a workspace");
     const base = appBaseUrl(req);
-    const inviter = user.name;
+    const inviter = plainName(user.name, `A ${BRAND} user`);
+    const footer = inviteFooter(inviter, BRAND);
 
     const target = await prisma.user.findUnique({
       where: { email },
@@ -104,13 +111,16 @@ export async function POST(
       // through sign-up and then joins them to the workspace).
       const invite = await getOrCreateInvite(workspaceId, user.id);
       const url = `${base}/invite/${invite.token}`;
-      const emailed = await sendEmail({
-        to: email,
-        subject: `${inviter} invited you to ${workspaceName} on ${BRAND}`,
-        text: `${inviter} invited you to join the "${workspaceName}" workspace.\n\nCreate your account and join here:\n${url}\n\nThis link expires in 7 days.`,
-        html: inviteEmailHtml({ inviter, workspaceName, url, cta: "Join the workspace" }),
-      }).catch(() => false);
-      return NextResponse.json({ invited: true, email, emailed, token: invite.token });
+      const notice = await reserveInviteEmail({ workspaceId, inviterId: user.id, email });
+      const emailed =
+        !notice &&
+        (await sendEmail({
+          to: email,
+          subject: `${inviter} invited you to ${workspaceName} on ${BRAND}`,
+          text: `${inviter} invited you to join the "${workspaceName}" workspace.\n\nCreate your account and join here:\n${url}\n\nThis link expires in 7 days.\n\n${footer.text}`,
+          html: inviteEmailHtml({ inviter, workspaceName, url, cta: "Join the workspace", footer: footer.html }),
+        }).catch(() => false));
+      return NextResponse.json({ invited: true, email, emailed, token: invite.token, notice });
     }
 
     const existing = await prisma.workspaceMember.findUnique({
@@ -132,14 +142,19 @@ export async function POST(
       targetId: target.id,
     });
 
-    // Best-effort heads-up so they know they've been added.
+    // Best-effort heads-up so they know they've been added. It counts against
+    // the same daily limits: removing and re-adding someone must not become a
+    // way to email them over and over.
     const url = `${base}/w/${workspaceId}`;
-    const emailed = await sendEmail({
-      to: target.email,
-      subject: `${inviter} added you to ${workspaceName} on ${BRAND}`,
-      text: `${inviter} added you to the "${workspaceName}" workspace.\n\nOpen it here:\n${url}`,
-      html: inviteEmailHtml({ inviter, workspaceName, url, cta: "Open the workspace" }),
-    }).catch(() => false);
+    const notice = await reserveInviteEmail({ workspaceId, inviterId: user.id, email: target.email });
+    const emailed =
+      !notice &&
+      (await sendEmail({
+        to: target.email,
+        subject: `${inviter} added you to ${workspaceName} on ${BRAND}`,
+        text: `${inviter} added you to the "${workspaceName}" workspace.\n\nOpen it here:\n${url}\n\n${footer.text}`,
+        html: inviteEmailHtml({ inviter, workspaceName, url, cta: "Open the workspace", footer: footer.html }),
+      }).catch(() => false));
 
     return NextResponse.json({
       id: target.id,
@@ -147,6 +162,7 @@ export async function POST(
       email: target.email,
       image: target.image,
       emailed,
+      notice,
     });
   });
 }
@@ -156,9 +172,9 @@ function inviteEmailHtml(o: {
   workspaceName: string;
   url: string;
   cta: string;
+  footer: string;
 }): string {
-  const esc = (s: string) =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const esc = escapeHtml;
   return `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1d1c1d">
     <h2 style="font-size:20px;margin:0 0 8px">Join <strong>${esc(o.workspaceName)}</strong></h2>
     <p style="font-size:15px;line-height:1.5;color:#454245;margin:0 0 20px">
@@ -170,5 +186,6 @@ function inviteEmailHtml(o: {
     <p style="font-size:13px;color:#616061;margin:0">Or paste this link into your browser:<br>
       <a href="${esc(o.url)}" style="color:#1264a3;word-break:break-all">${esc(o.url)}</a>
     </p>
+    ${o.footer}
   </div>`;
 }

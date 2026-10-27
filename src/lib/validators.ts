@@ -1,5 +1,20 @@
 import { z } from "zod";
 import { MAX_FILES_PER_MESSAGE } from "@/lib/upload-limits";
+import { nameError } from "@/lib/email-safety";
+
+/** A person's or workspace's name. These land in our emails (invitations,
+ *  notifications), so HTML and links are refused (email-safety.ts). */
+export function safeName(required: string) {
+  return z
+    .string()
+    .trim()
+    .min(1, required)
+    .max(80)
+    .superRefine((value, ctx) => {
+      const error = nameError(value);
+      if (error) ctx.addIssue({ code: "custom", message: error });
+    });
+}
 
 // A tiny denylist of the most-guessed passwords. Not a substitute for a breach
 // check (HIBP), but blocks the worst offenders (incl. the demo seed password).
@@ -17,7 +32,7 @@ const COMMON_PASSWORDS = new Set([
 ]);
 
 export const registerSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(80),
+  name: safeName("Name is required"),
   email: z.string().trim().toLowerCase().email("Enter a valid email"),
   password: z
     .string()
@@ -38,7 +53,7 @@ export const addWorkspaceMemberSchema = z.object({
 });
 
 export const createWorkspaceSchema = z.object({
-  name: z.string().trim().min(1, "Workspace name is required").max(80),
+  name: safeName("Workspace name is required"),
 });
 
 export const createChannelSchema = z.object({

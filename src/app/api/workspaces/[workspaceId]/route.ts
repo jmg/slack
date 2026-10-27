@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { apiError, handle, requireUser } from "@/lib/api";
 import { requireWorkspaceMember } from "@/lib/data";
 import { assertSameOrigin } from "@/lib/csrf";
+import { createWorkspaceSchema } from "@/lib/validators";
 
-const updateSchema = z.object({
-  name: z.string().trim().min(1, "Workspace name is required").max(80),
-});
+// Same rules as a new workspace's name (no HTML or links: it lands in emails).
+const updateSchema = createWorkspaceSchema;
 
 /** Rename a workspace. Workspace ADMINs only. */
 export async function PATCH(
