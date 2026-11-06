@@ -13,7 +13,13 @@ function loadSdk(): Promise<Sdk | null> {
       JENTRY_ENABLED && process.env.NEXT_RUNTIME === "nodejs"
         ? import("@jentry/sdk")
             .then((m) => {
-              m.init({ dsn: JENTRY_DSN, environment: process.env.NODE_ENV ?? "production" });
+              m.init({
+                dsn: JENTRY_DSN,
+                environment: process.env.NODE_ENV ?? "production",
+                // The commit DeployCloud gives every deploy; it registers the
+                // same version with jentry, so events line up with releases.
+                release: process.env.SENTRY_RELEASE || undefined,
+              });
               return m;
             })
             .catch(() => null)

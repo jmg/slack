@@ -1,9 +1,11 @@
 import "dotenv/config";
+import { Client as JentryClient } from "@jentry/sdk";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { BRAND_ORIGIN } from "../src/lib/brand";
 import { sendEmail } from "../src/lib/email";
 import { ABUSE_EMAIL, escapeHtml, plainName } from "../src/lib/email-safety";
+import { JENTRY_DSN, JENTRY_ENABLED } from "../src/lib/jentry";
 
 /**
  * Email people about messages they haven't seen. Meant to run on a schedule
@@ -13,6 +15,20 @@ import { ABUSE_EMAIL, escapeHtml, plainName } from "../src/lib/email-safety";
  * newer than lastNotifiedAt — then sends one digest and advances the cursor so
  * no message is ever emailed twice.
  */
+
+// This runs in its own cron container, outside Next and its instrumentation,
+// so nothing else reports for it: a crash only set the exit code, and the
+// platform's check-in says "failed" without saying why. Same project as the
+// app (src/lib/jentry.ts). A bare client, not init(): that would also send a
+// release-health session every five minutes and install process handlers.
+const jentry = JENTRY_ENABLED
+  ? new JentryClient({
+      dsn: JENTRY_DSN,
+      environment: process.env.NODE_ENV ?? "production",
+      release: process.env.SENTRY_RELEASE || undefined,
+    })
+  : null;
+jentry?.setTag("cron", "email-notify");
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -49,6 +65,7 @@ async function main() {
   });
 
   let emailed = 0;
+  let notSent = 0;
   for (const user of users) {
     // "offline OR unread X min": don't email someone actively in the app.
     if (isOnline(user.lastSeenAt)) continue;
@@ -121,6 +138,7 @@ async function main() {
         html: `<p>Hi ${escapeHtml(name)},</p><p>You have <strong>${unread}</strong> unread message${plural} waiting.</p><p><a href="${APP_URL}">Open Talkaroo to catch up →</a></p>${FOOTER_HTML}`,
       });
       if (ok) emailed += 1;
+      else notSent += 1;
       console.log(`${user.email}: ${unread} unread (emailed: ${ok})`);
     }
 
@@ -132,11 +150,18 @@ async function main() {
   }
 
   console.log(`notify-emails: ${users.length} opted-in, ${emailed} emailed`);
+  // sendEmail logs SendGrid's answer and returns false; the run still "succeeds".
+  // (Without SendGrid configured, as in a local run, every send is skipped.)
+  if (notSent > 0 && process.env.SENDGRID_API_KEY) {
+    jentry?.captureMessage(`notify-emails: ${notSent} of ${notSent + emailed} digests not sent`, "error");
+  }
 }
 
 main()
   .catch((err) => {
     console.error(err);
     process.exitCode = 1;
+    jentry?.captureException(err, "error", { type: "cron", handled: false });
   })
-  .finally(() => prisma.$disconnect());
+  // Sent before the container exits, two seconds at most.
+  .finally(() => Promise.all([prisma.$disconnect(), jentry?.flush(2000)]));
